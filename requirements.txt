@@ -1,0 +1,10 @@
+flask
+requests
+numpy
+sounddevice
+faster-whisper
+piper-tts
+pypdf
+pillow
+psutil
+cryptography

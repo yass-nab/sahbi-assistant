@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sahbi</title>
+<link rel="icon" href="/web/icon.svg">
+<style>
+:root{
+  --bg:#06070a; --glass:rgba(22,24,31,.62); --glass2:rgba(30,33,42,.7); --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
+  --text:#ecebe8; --dim:#8d929c; --faint:#5b606a;
+  --gold:#f0b44c; --gold2:#ffd892; --amber:#c9781a; --blue:#6cb6ff; --violet:#a78bfa; --ok:#4ade80; --bad:#f87171;
+  --r:18px; --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.55 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;overflow:hidden}
+::selection{background:#f0b44c55}
+#bgfx{position:fixed;inset:0;z-index:0}
+.app{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;height:100%;max-width:1320px;margin:0 auto;padding:20px}
+@media(max-width:920px){.app{grid-template-columns:1fr;padding:12px}.side{display:none}}
+.main{display:flex;flex-direction:column;min-height:0;min-width:0}
+header{display:flex;align-items:center;gap:10px;padding:2px 4px 0}
+.brand{font:600 20px/1 "Segoe UI Variable Display","Segoe UI",sans-serif;letter-spacing:.3px}
+.brand b{background:linear-gradient(90deg,var(--gold2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--dim);background:var(--glass);border:1px solid var(--line);border-radius:99px;padding:4px 10px;backdrop-filter:blur(10px)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.chip.on .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.chip.warn .dot{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.sp{flex:1}
+.iconbtn{width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:var(--glass);border:1px solid var(--line);color:var(--text);cursor:pointer;transition:.25s var(--ease);backdrop-filter:blur(10px)}
+.iconbtn:hover{border-color:var(--line2);transform:translateY(-1px)}
+.iconbtn svg{width:18px;height:18px}
+
+/* orb */
+.stage{position:relative;height:250px;flex:none;display:grid;place-items:center;transition:height .6s var(--ease)}
+.app.chatting .stage{height:170px}
+#orb{width:250px;height:250px;cursor:pointer;transition:transform .5s var(--ease)}
+.app.chatting #orb{transform:scale(.72)}
+.status{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:13px;color:var(--dim);transition:.3s}
+.status b{color:var(--gold)}
+
+/* conversation */
+#log{flex:1;overflow-y:auto;padding:8px 6px 14px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;mask-image:linear-gradient(to bottom,transparent 0,#000 24px)}
+#log>*{flex-shrink:0}
+#log::-webkit-scrollbar{width:8px}#log::-webkit-scrollbar-thumb{background:#ffffff14;border-radius:8px}
+.msg{max-width:min(78%,680px);padding:11px 15px;border-radius:var(--r);word-wrap:break-word;animation:pop .45s var(--ease) both;backdrop-filter:blur(12px)}
+.me{align-self:flex-end;background:linear-gradient(135deg,#25385a,#1c2b47);border:1px solid #33507e;border-bottom-right-radius:6px}
+.ai{align-self:flex-start;background:var(--glass2);border:1px solid var(--line);border-bottom-left-radius:6px}
+.ai p{margin:0 0 6px}.ai p:last-child{margin:0}.ai ul{margin:4px 0;padding-left:20px}.ai a{color:var(--blue)}
+.ai code{background:#ffffff10;padding:1px 5px;border-radius:6px;font-size:13px}
+.caret::after{content:"";display:inline-block;width:7px;height:15px;margin-left:3px;vertical-align:-2px;background:var(--gold);border-radius:2px;animation:blink 1s steps(2) infinite}
+.voice{font-size:11px;color:#9fb6da;margin-left:6px}
+.typing{align-self:flex-start;display:flex;gap:5px;padding:14px 16px;background:var(--glass2);border:1px solid var(--line);border-radius:var(--r);animation:pop .3s var(--ease)}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:bounce 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+.act{align-self:flex-start;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim);background:#ffffff06;border:1px solid var(--line);border-radius:12px;padding:6px 11px;animation:pop .4s var(--ease) both;max-width:90%}
+.act .ic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:#f0b44c1c;color:var(--gold);flex:none;font-size:12px}
+.act b{color:var(--text);font-weight:600}
+.act span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* email card */
+.mail{align-self:flex-start;width:min(560px,92%);background:linear-gradient(160deg,#1b1f2a,#141720);border:1px solid #f0b44c44;border-radius:var(--r);padding:14px 16px;animation:pop .5s var(--ease) both;position:relative;overflow:hidden}
+.mail .top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.mail .badge{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gold)}
+.mail .to{font-size:13px;color:var(--dim)} .mail .to b{color:var(--text);font-weight:600}
+.mail .subj{font-weight:600;margin-bottom:4px}
+.mail .body{font-size:13.5px;color:#c9ccd3;white-space:pre-wrap;max-height:130px;overflow:auto;padding-right:4px}
+.mail .files{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.mail .file{font-size:12px;background:#ffffff0c;border:1px solid var(--line);border-radius:8px;padding:3px 8px}
+.mail .bar{position:absolute;left:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--amber));width:100%;transform-origin:left}
+.mail .row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.mail .count{font-size:13px;color:var(--dim)}
+.btn{border:1px solid var(--line2);background:#ffffff0a;color:var(--text);border-radius:10px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer;transition:.2s}
+.btn:hover{background:#ffffff14}
+.btn.danger{border-color:#f8717166;color:#fca5a5}
+.btn.danger:hover{background:#f871711a}
+.mail.sent{border-color:#4ade8055}.mail.sent .badge{color:var(--ok)}
+.mail.cancelled{opacity:.55;border-color:var(--line)}.mail.cancelled .badge{color:var(--dim)}
+.mail.failed{border-color:#f8717166}.mail.failed .badge{color:var(--bad)}
+
+/* brief, lists */
+.brief{align-self:flex-start;width:min(620px,94%);background:linear-gradient(160deg,#2a1e08cc,#15130ecc);border:1px solid #f0b44c44;border-radius:var(--r);padding:13px 16px;animation:pop .5s var(--ease) both}
+.brief p{margin:0}
+.lh{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.list{align-self:flex-start;width:min(620px,94%);background:var(--glass2);border:1px solid var(--line);border-radius:var(--r);padding:12px 12px 6px;animation:pop .5s var(--ease) both}
+.li{display:flex;gap:10px;align-items:flex-start;padding:8px 6px;border-top:1px solid var(--line);color:var(--text);text-decoration:none;border-radius:10px;transition:background .2s}
+.li:hover{background:#ffffff08}.list .lh+.li{border-top:0}
+.li .n{flex:none;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:12px;background:#ffffff10;color:var(--dim)}
+.li small{color:var(--dim)} .li .sn{display:block;color:var(--faint);margin-top:2px}
+.li div{flex:1;min-width:0;font-size:13.5px}
+.fit{flex:none;font-size:12px;font-weight:700;padding:3px 8px;border-radius:8px}
+.fhi{background:#4ade8022;color:var(--ok)}.fmid{background:#f0b44c22;color:var(--gold)}.flo{background:#ffffff0d;color:var(--dim)}
+.act.busy span:last-child{animation:shimmer 1.4s infinite}
+@keyframes shimmer{50%{opacity:.45}}
+/* composer */
+.composer{flex:none;margin-top:6px;background:var(--glass);border:1px solid var(--line);border-radius:22px;padding:6px;display:flex;align-items:center;gap:6px;backdrop-filter:blur(16px);transition:.3s var(--ease)}
+.composer:focus-within{border-color:#f0b44c66;box-shadow:0 0 0 4px #f0b44c14}
+.composer input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit;padding:10px 12px}
+.mic{width:42px;height:42px;border-radius:14px;border:0;display:grid;place-items:center;cursor:pointer;background:#ffffff0c;color:var(--text);transition:.25s var(--ease)}
+.mic:hover{background:#ffffff18}
+.mic.live{background:var(--blue);color:#06101f;box-shadow:0 0 22px #6cb6ff88}
+.send{width:42px;height:42px;border-radius:14px;border:0;display:grid;place-items:center;cursor:pointer;color:#1d1304;background:linear-gradient(135deg,var(--gold2),var(--gold));transition:.25s var(--ease)}
+.send:hover{transform:scale(1.05)}
+.mic svg,.send svg{width:19px;height:19px}
+.chips{flex:none;display:flex;gap:7px;overflow-x:auto;padding:10px 2px 2px;scrollbar-width:none}
+.chips button{flex:none;font:inherit;font-size:13px;color:var(--text);background:var(--glass);border:1px solid var(--line);border-radius:99px;padding:7px 13px;cursor:pointer;transition:.25s var(--ease);backdrop-filter:blur(10px)}
+.chips button:hover{border-color:#f0b44c66;transform:translateY(-2px)}
+
+/* side */
+.side{display:flex;flex-direction:column;gap:12px;overflow-y:auto;padding-bottom:4px;scrollbar-width:none}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:var(--r);padding:15px 16px;backdrop-filter:blur(16px);animation:pop .6s var(--ease) both}
+.card h3{margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--faint)}
+.clock{font:300 44px/1 "Segoe UI Variable Display","Segoe UI",sans-serif;letter-spacing:-1px}
+.day{color:var(--dim);font-size:13px;margin-top:6px;text-transform:capitalize}
+.wx{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.wx .t{font-size:22px;font-weight:600}.wx .s{font-size:13px;color:var(--dim)}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px}
+.kv span:first-child{color:var(--dim)}
+.up{color:var(--ok)}.down{color:var(--bad)}
+.meter{height:5px;background:#ffffff0d;border-radius:5px;overflow:hidden;margin-top:3px}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--amber));border-radius:5px;transition:width 1s var(--ease)}
+.news{list-style:none;margin:0;padding:0}
+.news li{font-size:13px;color:#c3c6cd;padding:7px 0;border-top:1px solid var(--line);line-height:1.4}
+.news li:first-child{border:0;padding-top:0}
+.sentlist .it{font-size:13px;padding:6px 0;border-top:1px solid var(--line)}
+.sentlist .it:first-child{border:0}
+.sentlist .it small{color:var(--faint);display:block}
+.setup{font-size:13px;color:#e8d3a8;background:#f0b44c12;border:1px solid #f0b44c33;border-radius:12px;padding:10px 12px;line-height:1.45}
+.foot{font-size:11.5px;color:var(--faint);text-align:center;padding:2px 8px}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);opacity:0;background:var(--glass2);border:1px solid var(--line2);padding:10px 16px;border-radius:14px;font-size:14px;backdrop-filter:blur(16px);transition:.4s var(--ease);z-index:9;pointer-events:none}
+.toast.show{transform:translate(-50%,0);opacity:1}
+
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes blink{50%{opacity:0}}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-6px);opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="bgfx"></canvas>
+<div class="app" id="app">
+  <div class="main">
+    <header>
+      <div class="brand">Salam, <b>Sahbi</b></div>
+      <span class="chip" id="cModel"><span class="dot"></span><span>model</span></span>
+      <span class="chip" id="cMic"><span class="dot"></span><span>mic</span></span>
+      <span class="chip" id="cMail"><span class="dot"></span><span>email</span></span>
+      <span class="sp"></span>
+      <button class="iconbtn" id="voiceBtn" title="Read replies out loud"></button>
+      <button class="iconbtn" id="reset" title="New conversation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+    </header>
+
+    <div class="stage">
+      <canvas id="orb" width="500" height="500" title="Click and talk"></canvas>
+      <div class="status" id="status">Say <b>"Salam Sahbi"</b> — or tap the orb</div>
+    </div>
+
+    <div id="log"></div>
+
+    <form class="composer" id="f">
+      <button type="button" class="mic" id="micBtn" title="Talk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <input id="t" placeholder="Ask Sahbi anything…" autocomplete="off" autofocus>
+      <button class="send" title="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </form>
+    <div class="chips">
+      <button data-q="Give me my morning brief">🌅 Brief</button>
+      <button data-q="Check my important emails">📥 Emails</button>
+      <button data-q="Find data analyst jobs for me">🧭 Jobs</button>
+      <button data-q="Look at my screen and explain what you see">👁️ My screen</button>
+      <button data-q="Email my French CV to ">✉️ Email my CV…</button>
+      <button data-q="Send my English CV to my phone">📱 CV → phone</button>
+      <button data-q="Remind me in 25 minutes to take a break">⏱️ Break 25 min</button>
+    </div>
+  </div>
+
+  <aside class="side">
+    <div class="card">
+      <div class="clock" id="clock">--:--</div>
+      <div class="day" id="day"></div>
+      <div class="wx"><div class="t" id="wxT">--°</div><div class="s" id="wxS">…</div></div>
+    </div>
+    <div class="card"><h3>Markets</h3><div id="markets"><div class="kv"><span>…</span></div></div></div>
+    <div class="card"><h3>Sent by Sahbi</h3><div id="mailSide" class="sentlist"><div class="foot">…</div></div></div>
+    <div class="card"><h3>Memory</h3><div id="mem" class="sentlist"><div class="foot">…</div></div></div>
+    <div class="card"><h3>Laptop</h3><div id="pc"></div></div>
+    <div class="card"><h3>Tech news</h3><ul class="news" id="news"></ul></div>
+    <div class="foot">100% local · Whisper + Qwen on your RTX 3060</div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const log = $('#log'), app = $('#app');
+const store = { get(k, d){ try { return localStorage.getItem(k) ?? d } catch { return d } }, set(k, v){ try { localStorage.setItem(k, v) } catch {} } };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function md(s){
+  let h = esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+  const lines = h.split('\n'); let out = '', list = false;
+  for (const l of lines){
+    const m = l.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)/);
+    if (m){ if(!list){ out += '<ul>'; list = true } out += `<li>${m[1]}</li>`; continue }
+    if (list){ out += '</ul>'; list = false }
+    if (l.trim()) out += `<p>${l}</p>`;
+  }
+  return out + (list ? '</ul>' : '');
+}
+function toast(t){ const e = $('#toast'); e.textContent = t; e.classList.add('show'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('show'), 2600); }
+function scroll(){ log.scrollTop = log.scrollHeight }
+function el(cls, html){ const d = document.createElement('div'); d.className = cls; d.innerHTML = html; log.appendChild(d); app.classList.add('chatting'); scroll(); return d; }
+
+/* ---------- state + orb ---------- */
+let mode = 'idle', level = 0, target = 0;
+const STATUS = { idle:'Say <b>"Salam Sahbi"</b> — or tap the orb', listening:'Listening… <b>talk now</b>', thinking:'Thinking…', speaking:'Speaking…' };
+function setMode(m){ mode = m || 'idle'; $('#status').innerHTML = STATUS[mode] || STATUS.idle; $('#micBtn').classList.toggle('live', mode === 'listening'); }
+const PAL = { idle:['#ffd892','#f0b44c','#7a4306'], listening:['#cfe6ff','#6cb6ff','#1b3e78'], thinking:['#e3d6ff','#a78bfa','#3d2a7a'], speaking:['#fff0c8','#ffc65c','#8a4b05'] };
+const cur = { a:[255,216,146], b:[240,180,76], c:[122,67,6] };
+const hex = h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16));
+const lerp = (x,y,t) => x + (y - x) * t;
+const oc = $('#orb'), ox = oc.getContext('2d');
+let t0 = performance.now();
+function drawOrb(now){
+  const t = (now - t0) / 1000, W = oc.width, R = W * .26, cx = W/2, cy = W/2;
+  const p = PAL[mode]; ['a','b','c'].forEach((k,i) => { const h = hex(p[i]); cur[k] = cur[k].map((v,j) => lerp(v, h[j], .06)); });
+  target = mode === 'speaking' ? .55 + .45*Math.abs(Math.sin(t*9)*Math.sin(t*3.3)) : mode === 'listening' ? .35 + .25*Math.sin(t*5) : mode === 'thinking' ? .25 : .08;
+  level = lerp(level, target, .12);
+  ox.clearRect(0,0,W,W);
+  const rgb = (c,a) => `rgba(${c.map(Math.round).join(',')},${a})`;
+  // glow
+  let g = ox.createRadialGradient(cx,cy,R*.6,cx,cy,R*1.9); g.addColorStop(0, rgb(cur.b,.35 + level*.3)); g.addColorStop(1, rgb(cur.b,0));
+  ox.fillStyle = g; ox.beginPath(); ox.arc(cx,cy,R*1.9,0,7); ox.fill();
+  // rings (wobbly)
+  for (let k = 0; k < 3; k++){
+    ox.beginPath();
+    for (let i = 0; i <= 120; i++){
+      const a = i/120*Math.PI*2, wob = Math.sin(a*(3+k) + t*(1.2+k*.5)*(mode==='thinking'?2.5:1)) * (4 + level*18) + Math.sin(a*7 - t*2) * level*6;
+      const r = R*(1.18 + k*.13) + wob; const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r;
+      i ? ox.lineTo(x,y) : ox.moveTo(x,y);
+    }
+    ox.strokeStyle = rgb(cur.b, .32 - k*.08); ox.lineWidth = 2; ox.stroke();
+  }
+  // core
+  const pulse = 1 + level*.08 + Math.sin(t*1.6)*.012;
+  g = ox.createRadialGradient(cx - R*.35, cy - R*.4, R*.05, cx, cy, R*pulse);
+  g.addColorStop(0, rgb(cur.a,1)); g.addColorStop(.45, rgb(cur.b,1)); g.addColorStop(1, rgb(cur.c,1));
+  ox.fillStyle = g; ox.beginPath(); ox.arc(cx,cy,R*pulse,0,7); ox.fill();
+  // swirl highlight
+  ox.save(); ox.beginPath(); ox.arc(cx,cy,R*pulse,0,7); ox.clip();
+  for (let i = 0; i < 3; i++){
+    ox.beginPath(); const ang = t*(.6+i*.25) + i*2;
+    ox.ellipse(cx + Math.cos(ang)*R*.25, cy + Math.sin(ang)*R*.2, R*.9, R*.22, ang, 0, 7);
+    ox.fillStyle = rgb(cur.a, .07 + level*.05); ox.fill();
+  }
+  ox.restore();
+  requestAnimationFrame(drawOrb);
+}
+requestAnimationFrame(drawOrb);
+
+/* background: slow drifting particles */
+const bg = $('#bgfx'), bx = bg.getContext('2d'); let parts = [];
+function sizeBg(){ bg.width = innerWidth*devicePixelRatio; bg.height = innerHeight*devicePixelRatio; parts = Array.from({length: Math.min(70, innerWidth/18)}, () => ({x:Math.random()*bg.width, y:Math.random()*bg.height, r:Math.random()*1.6+.3, v:Math.random()*.25+.05, o:Math.random()*.5+.1})); }
+sizeBg(); addEventListener('resize', sizeBg);
+(function drawBg(){
+  const W = bg.width, H = bg.height; bx.clearRect(0,0,W,H);
+  let g = bx.createRadialGradient(W*.32,-H*.1,0,W*.32,-H*.1,H*1.1); g.addColorStop(0,'rgba(240,180,76,.13)'); g.addColorStop(1,'rgba(0,0,0,0)'); bx.fillStyle = g; bx.fillRect(0,0,W,H);
+  g = bx.createRadialGradient(W*.9,H*1.05,0,W*.9,H*1.05,H*.9); g.addColorStop(0,'rgba(108,182,255,.07)'); g.addColorStop(1,'rgba(0,0,0,0)'); bx.fillStyle = g; bx.fillRect(0,0,W,H);
+  for (const p of parts){ p.y -= p.v*devicePixelRatio; if (p.y < -5){ p.y = H + 5; p.x = Math.random()*W } bx.beginPath(); bx.arc(p.x,p.y,p.r*devicePixelRatio,0,7); bx.fillStyle = `rgba(255,214,150,${p.o*.5})`; bx.fill(); }
+  requestAnimationFrame(drawBg);
+})();
+
+/* ---------- voice (spoken by the laptop with Piper; this only toggles it) ---------- */
+let speakOn = true;
+const VOL_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+const VOL_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6M16 9l6 6"/></svg>';
+const paintVol = () => $('#voiceBtn').innerHTML = speakOn ? VOL_ON : VOL_OFF; paintVol();
+$('#voiceBtn').onclick = async () => { const r = await (await post('/api/voice', {on: !speakOn})).json(); speakOn = r.on; paintVol(); toast(speakOn ? 'Voice on' : 'Voice off'); };
+
+/* ---------- events ---------- */
+const post = (u, b) => fetch(u, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(b || {})});
+let streamEl = null, streamText = '', typingEl = null;
+const ICON = { find_files:'🔎', search_my_documents:'📚', open_path:'📂', read_document:'📄', send_to_phone:'📱', notify_phone:'📲', open_website:'🌐', web_search:'🔍', open_app:'🚀', look_at_screen:'👁️', check_email:'📥', read_email:'📨', reply_email:'↩️', send_email:'✉️', cancel_email:'✋', find_jobs:'🧭', job_details:'📋', log_application:'📝', job_applications:'💼', live_stats:'📊', morning_brief:'🌅', reminder:'⏱️', remember:'🧠', forget:'🧹' };
+const LABEL = { look_at_screen:'Looking at your screen…', search_my_documents:'Searching your documents…', check_email:'Checking Gmail…', find_jobs:'Searching job boards…', job_details:'Opening the offer…', read_email:'Reading the email…' };
+let pendingAct = null;
+function listCard(title, rows){ return el('list', `<div class="lh">${title}</div>` + rows.join('')); }
+function typing(on){ if (on && !typingEl){ typingEl = el('typing','<i></i><i></i><i></i>') } if (!on && typingEl){ typingEl.remove(); typingEl = null } }
+
+const mails = {};
+function mailCard(m){
+  const d = el('mail', `<div class="top"><span class="badge">Sending</span><span class="sp"></span><span class="to">to <b>${esc(m.to.join(', '))}</b></span></div>
+    <div class="subj">${esc(m.subject)}</div><div class="body">${esc(m.body)}</div>
+    ${m.files?.length ? `<div class="files">${m.files.map(f => `<span class="file">📎 ${esc(f)}</span>`).join('')}</div>` : ''}
+    <div class="row"><span class="count">Sending in <b>${m.seconds}</b>s — say “cancel” to stop</span><span class="sp"></span><button class="btn danger">Cancel</button></div>
+    <div class="bar"></div>`);
+  const bar = d.querySelector('.bar'); bar.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}], {duration: m.seconds*1000, easing:'linear', fill:'forwards'});
+  let left = m.seconds; const cnt = d.querySelector('.count b');
+  d._iv = setInterval(() => { left = Math.max(0, left-1); if (cnt) cnt.textContent = left; }, 1000);
+  d.querySelector('.btn').onclick = () => post('/api/cancel', {id: m.id});
+  mails[m.id] = d;
+}
+function mailDone(id, cls, label, note){
+  const d = mails[id]; if (!d) return;
+  clearInterval(d._iv); d.classList.add(cls); d.querySelector('.badge').textContent = label;
+  const row = d.querySelector('.row'); row.innerHTML = `<span class="count">${note}</span>`; d.querySelector('.bar')?.remove();
+}
+
+function connect(){
+  const es = new EventSource('/api/events');
+  es.onmessage = e => {
+    const m = JSON.parse(e.data);
+    switch (m.type){
+      case 'hello':
+        $('#cModel').classList.add('on'); $('#cModel span:last-child').textContent = m.model;
+        $('#cMic').classList.toggle('on', !!m.mic); $('#cMic span:last-child').textContent = m.mic ? 'wake word on' : 'mic off';
+        speakOn = m.voice !== false; paintVol(); break;
+      case 'state': setMode(m.state); if (m.state === 'thinking') typing(true); break;
+      case 'action_start': if (LABEL[m.tool]){ typing(false); pendingAct = el('act busy', `<span class="ic">${ICON[m.tool]}</span><span>${LABEL[m.tool]}</span>`); } break;
+      case 'brief': el('brief', `<div class="lh">🌅 Daily brief</div>${md(m.text)}`); break;
+      case 'reminder': el('brief', `<div class="lh">⏱️ Reminder</div>${esc(m.text)}`); toast('⏱️ ' + m.text); break;
+      case 'inbox': if (m.messages?.length) listCard('📥 Inbox', m.messages.map(x => `<div class="li"><span class="n">${x.n}</span><div><b>${esc(x.from)}</b> <small>${esc(x.date)}</small><br>${esc(x.subject)}<small class="sn">${esc(x.snippet.slice(0,110))}</small></div></div>`)); break;
+      case 'jobs': if (m.jobs?.length) listCard('🧭 Job offers', m.jobs.map(j => `<a class="li" href="${esc(j.url)}" target="_blank" rel="noopener"><span class="n">${j.n}</span><div><b>${esc(j.title)}</b><br><small>${esc(j.company || '')} · ${esc(j.site)}</small></div><span class="fit f${j.score >= 6 ? 'hi' : j.score >= 3 ? 'mid' : 'lo'}">${j.score}/10</span></a>`)); break;
+      case 'wake': toast('Salam Sahbi 👋'); break;
+      case 'heard': el('msg me', esc(m.text) + (m.source === 'voice' ? '<span class="voice">🎙</span>' : '')); typing(true); break;
+      case 'stream_start': streamText = ''; break;
+      case 'delta':
+        typing(false);
+        if (!streamEl){ streamEl = el('msg ai caret', ''); }
+        streamText += m.text; streamEl.innerHTML = md(streamText); scroll(); break;
+      case 'stream_drop': if (streamEl){ streamEl.remove(); streamEl = null } streamText = ''; typing(true); break;
+      case 'action':
+        typing(false); if (pendingAct){ pendingAct.remove(); pendingAct = null }
+        el('act', `<span class="ic">${ICON[m.tool] || '⚙️'}</span><b>${esc(m.tool.replace(/_/g,' '))}</b><span>${esc(String(m.result).split('\n')[0].slice(0,140))}</span>`);
+        typing(true); break;
+      case 'reply':
+        typing(false);
+        if (streamEl){ streamEl.classList.remove('caret'); streamEl.innerHTML = md(m.text); streamEl = null }
+        else el('msg ai', md(m.text));
+        break;
+      case 'email_pending': mailCard(m); break;
+      case 'email_sent': mailDone(m.id, 'sent', 'Sent ✓', 'Delivered from your Gmail · copy in Sent'); toast('Email sent ✓'); loadMail(); break;
+      case 'email_failed': mailDone(m.id, 'failed', 'Failed', esc(m.error || 'error')); toast('Email failed'); break;
+      case 'email_cancelled': mailDone(m.id, 'cancelled', 'Cancelled', 'Nothing was sent'); toast('Cancelled'); break;
+    }
+  };
+  es.onerror = () => { $('#cMic').classList.remove('on'); $('#cMic span:last-child').textContent = 'reconnecting…'; };
+}
+connect();
+
+/* ---------- input ---------- */
+async function send(text){ text = text.trim(); if (!text) return; const r = await post('/api/chat', {text}); if (!r.ok) toast('Could not send'); }
+$('#f').onsubmit = e => { e.preventDefault(); const v = $('#t').value; $('#t').value = ''; send(v); };
+document.querySelectorAll('.chips button').forEach(b => b.onclick = () => {
+  const q = b.dataset.q; if (q.endsWith(' ')){ $('#t').value = q; $('#t').focus(); } else send(q);
+});
+async function listen(){ const r = await post('/api/listen'); if (!r.ok) toast('Microphone is off — type instead'); }
+$('#orb').onclick = listen; $('#micBtn').onclick = listen;
+$('#reset').onclick = async () => { await post('/api/reset'); log.innerHTML = ''; app.classList.remove('chatting'); toast('New conversation'); };
+addEventListener('keydown', e => { if (e.key === 'Escape' && Object.keys(mails).length) post('/api/cancel'); });
+
+/* ---------- side cards ---------- */
+const arrow = v => v == null ? '' : `<span class="${v >= 0 ? 'up' : 'down'}">${v >= 0 ? '▲' : '▼'} ${Math.abs(v).toFixed(2)}%</span>`;
+async function stats(){
+  try {
+    const d = await (await fetch('/api/status')).json();
+    $('#wxT').textContent = d.tempC != null ? d.tempC + '°' : '--°';
+    $('#wxS').innerHTML = d.city ? `${esc(d.city)}<br>${esc(d.sky || '')}` : '';
+    $('#markets').innerHTML = d.gold ? `<div class="kv"><span>Gold</span><span>$${Number(d.gold).toLocaleString()} ${arrow(d.goldChg)}</span></div><div class="kv"><span>Bitcoin</span><span>$${Number(d.btc||0).toLocaleString()} ${arrow(d.btcChg)}</span></div>` : '<div class="foot">no data</div>';
+    const bat = parseInt(d.battery) || 0, gpu = String(d.gpu||'').split(',');
+    $('#pc').innerHTML = `<div class="kv"><span>Battery</span><span>${esc(d.battery || '-')}</span></div><div class="meter"><i style="width:${bat}%"></i></div>
+      <div class="kv" style="margin-top:8px"><span>GPU</span><span>${gpu[0] ? gpu[0].trim() + '°C · ' + (gpu[1]||'').trim() : '-'}</span></div>
+      <div class="kv"><span>Disk free</span><span>${d.disk_free_gb} GB</span></div>`;
+    $('#news').innerHTML = (d.news || []).slice(0,5).map(n => `<li>${esc(n)}</li>`).join('');
+  } catch {}
+}
+async function loadMail(){
+  try {
+    const d = await (await fetch('/api/emails')).json();
+    $('#cMail').classList.toggle('on', d.ready); $('#cMail').classList.toggle('warn', !d.ready);
+    $('#cMail span:last-child').textContent = d.ready ? 'email ready' : 'email: setup';
+    $('#mailSide').innerHTML = !d.ready
+      ? `<div class="setup">To let Sahbi send emails, run <b>Setup Sahbi email.bat</b> once (in the sahbi folder) and paste a Gmail App Password.</div>`
+      : d.sent.length ? d.sent.map(s => `<div class="it">${esc(s.subject)}<small>${esc(s.to.join(', '))} · ${esc(String(s.t).slice(5,16).replace('T',' '))}</small></div>`).join('')
+      : `<div class="foot">Nothing sent yet · from ${esc(d.address)}</div>`;
+  } catch {}
+}
+function clock(){ const n = new Date(); $('#clock').textContent = n.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); $('#day').textContent = n.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'}); }
+async function loadMem(){
+  try {
+    const d = await (await fetch('/api/memory')).json(), ix = d.index || {};
+    const idx = ix.state === 'indexing' ? `Indexing documents… ${ix.done}/${ix.todo}` : ix.state === 'ready' ? `${ix.files} documents indexed` : 'Document index starts shortly';
+    $('#mem').innerHTML = (d.items.length ? d.items.slice(0,6).map(i => `<div class="it">${esc(i.fact)}<small>${esc(i.added)}</small></div>`).join('') : '<div class="foot">Tell me "remember that…"</div>')
+      + `<div class="foot" style="margin-top:8px">📚 ${idx}</div>`;
+  } catch {}
+}
+clock(); setInterval(clock, 5000); stats(); setInterval(stats, 60000); loadMail(); loadMem(); setInterval(loadMem, 20000);
+setTimeout(() => { if (!log.children.length){ const h = new Date().getHours(); el('msg ai', md(`${h < 12 ? 'Good morning' : h < 18 ? 'Hey' : 'Good evening'}, sahbi! I'm here — talk to me in any language, I'll answer in English.`)); app.classList.remove('chatting'); } }, 300);
+</script>
+</body>
+</html>

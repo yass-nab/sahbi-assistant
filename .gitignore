@@ -1,0 +1,18 @@
+# personal data - never committed
+config.json
+data/
+chats/
+*.log
+voices/*.onnx
+voices/*.onnx.json
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# os
+desktop.ini
+Thumbs.db
+MY-SETUP.md
