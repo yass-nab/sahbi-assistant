@@ -11,7 +11,7 @@ No cloud LLM, no API keys, no per-message cost.
 
 | | What it does | How |
 |---|---|---|
-| 🎙️ Wake word | "Salam Sahbi" in any accent, Arabic or Latin script | faster-whisper `base` on CPU + fuzzy matching, `small` model for commands |
+| 🎙️ Always-on voice | Start any sentence with "Sahbi": "Sahbi, look at my screen", "Sahbi, screenshot", "Sahbi, open my French CV" — no app or button needed | faster-whisper `base` as a loose first pass, `small` to confirm the name and hear the command; instant intents skip the LLM |
 | 🧠 Brain | Tool-calling agent with streaming replies | Ollama + `qwen2.5:7b`, 24 tools, live data injected to prevent hallucinated numbers |
 | 🗣️ Voice | Natural neural voice, mic muted while speaking | Piper TTS (`en_US-lessac-medium`) |
 | 📥 Gmail | Check inbox, read, reply, send with attachments — 10 s cancel window (voice "cancel", button or Esc) | IMAP/SMTP + Google App Password stored with Windows DPAPI |

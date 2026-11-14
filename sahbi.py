@@ -153,6 +153,24 @@ ROUTES = [   # small models skip tools; a nudge per message keeps them honest
 ]
 
 
+def quick_intent(t):
+    """Instant commands that don't need the language model. t = normalised text."""
+    w = t.split()
+    if len(w) > 9:
+        return None
+    if re.search(r'\b(screenshot|screen shot|screenshots|capture d ?ecran|capture ecran|prends une capture)\b', t) \
+            and not re.search(r'\b(look|explain|what|why|regarde|explique)\b', t):
+        return 'take_screenshot', {}
+    if re.search(r'\b(open|ouvre|ouvrir|show|montre|hel|7ell|lance)\b', t) and re.search(r'\b(cv|resume)\b', t):
+        lang = 'fr' if re.search(r'\b(french|francais|fr|france)\b', t) else 'en'
+        cv = config.get('cv').get(lang)
+        if cv:
+            return 'open_path', {'path': cv}
+    if re.search(r'\b(open|ouvre|show|montre)\b.*\b(yourself|sahbi|the app|your page|l app|ton interface|bubble map|the map)\b', t):
+        return 'open_website', {'url': URL + ('/?map' if 'map' in w else '')}
+    return None
+
+
 def route_hint(t):
     hits = [h for pat, h in ROUTES if re.search(pat, t)]
     keep = [h for h in hits if 'remember' in h]
@@ -179,6 +197,22 @@ def live_context():
 
 def chat(user_text, source='text', speak_reply=True):
     """One user turn -> tool calls -> final reply. Pushes events to the page and speaks the reply."""
+    quick = quick_intent(norm(user_text))
+    if quick:
+        tool, args = quick
+        push('heard', text=user_text, source=source)
+        result = tools.run(tool, args)
+        push('action', tool=tool, args=args, result=result[:600])
+        log('quick', tool, args, '->', result[:160])
+        reply = result.split('\n')[0]
+        push('reply', text=reply)
+        push('state', state='idle')
+        with open(CHATS / f'{datetime.now():%Y-%m-%d}.jsonl', 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'t': datetime.now().isoformat(timespec='seconds'), 'user': user_text, 'reply': reply,
+                                'actions': [{'tool': tool, 'args': args, 'result': result[:600]}]}, ensure_ascii=False) + '\n')
+        if speak_reply:
+            say(reply)
+        return reply
     with busy:
         push('heard', text=user_text, source=source)
         push('state', state='thinking')
@@ -274,10 +308,11 @@ tools.notify = on_tool_event
 
 
 # ------------------------------------------------------------------ ears (microphone + wake word)
-WAKE_A = ('salam', 'salaam', 'slam', 'salem', 'assalam', 'سلام', 'salut', 'shalom', 'salom')
-WAKE_B = ('sahbi', 'sahby', 'sahibi', 'saheb', 'sahb', 'sabi', 'sahbe', 'saabi', 'sahibe', 'saby', 'sahabi', 'sabbi', 'sahvi',
-          'صاحبي', 'صحبي', 'سعبي', 'سحبي', 'ساحبي', 'صاحبى', 'صحابي', 'صابي', 'سابي', 'صاحب')
+WAKE = ('sahbi', 'sahby', 'sahibi', 'sahbe', 'sahbee', 'sabi', 'saabi', 'sabbi', 'sahabi', 'sa7bi', 'sehbi', 'sohbi',
+        'صاحبي', 'صحبي', 'ساحبي', 'سحبي', 'صاحبى')
+GREET = ('salam', 'salaam', 'salem', 'slam', 'assalam', 'salut', 'hey', 'hi', 'ok', 'okay', 'ya', 'yo', 'سلام', 'يا')
 CANCEL_WORDS = {'annule', 'annuler', 'annul', 'cancel', 'stop', 'la', 'laa', 'non', 'no', 'arrete', 'baraka'}
+STT_HINT = 'Sahbi, look at my screen. Sahbi, ouvre mon CV. Sahbi, screenshot.'
 
 
 def norm(s):
@@ -285,21 +320,31 @@ def norm(s):
     return re.sub(r'[^\w\s]', ' ', ''.join(c for c in s if not unicodedata.combining(c)))
 
 
-def half_wake(text):
-    """Heard 'salam' but not clearly 'sahbi' -> worth a second listen with the better model."""
-    t = norm(text)
-    return 'سلام' in text or any(w.startswith(x) for w in t.split() for x in WAKE_A)
-
-
-def is_wake(text):
-    """The phrase must OPEN the utterance ("Salam Sahbi ..."), so songs and TV that mention the words
-    somewhere in a sentence don't wake it."""
-    words = norm(text).split()
-    if not words:
+def maybe_wake(text):
+    """Loose test on the FAST model's text (it mishears the name: "Saw by", "Sabie", "Bye bye", "سبي").
+    Anything that passes is re-heard by the better model, so this may be generous."""
+    w = norm(text).split()
+    while w and w[0] in GREET:
+        w = w[1:]
+    if not w:
         return False
-    a = any(w.startswith(x) or x in w for w in words[:2] for x in WAKE_A)
-    b = any(x in ''.join(words[:4]) for x in WAKE_B)
-    return a and b
+    head = ''.join(w[:2])
+    if re.match(r'(sa|so|su|za|ca|tsa|sha)\w{0,3}b', head) or re.match(r'[سصزش]\w{0,3}ب', head):
+        return True
+    return len(w) <= 2 and bool(re.search(r'b|ب', head))        # a lone short word with a "b" ("Bye bye")
+
+
+def split_wake(text):
+    """Strict test on the GOOD model's text: the name must open the sentence ("Sahbi, ..." / "Salam Sahbi ...").
+    Returns the command after the name, or None if this was not addressed to Sahbi."""
+    toks = list(re.finditer(r'\w+', text))
+    for i, m in enumerate(toks[:3]):
+        w = norm(m.group()).strip()
+        if w in WAKE:
+            return text[m.end():].strip(' ,.!?:;-،')
+        if w not in GREET:
+            return None
+    return None
 
 
 class Ears:
@@ -330,11 +375,11 @@ class Ears:
             if not voiced:
                 floor = 0.98 * floor + 0.02 * min(rms, 0.05)
                 pre = (pre + [block])[-10:]          # keep 300 ms before speech starts
-                if rms > max(0.012, floor * 3.2):
+                if rms > max(0.008, floor * 3.0):          # sensitive enough for a voice across the room
                     voiced, buf, silence = True, list(pre), 0
             else:
                 buf.append(block)
-                silence = silence + 1 if rms < max(0.009, floor * 2.2) else 0
+                silence = silence + 1 if rms < max(0.006, floor * 2.0) else 0
                 dur = len(buf) * self.BLOCK / self.RATE
                 if silence > 23 or dur > 12:           # ~0.7 s quiet, or 12 s max
                     voiced = False
@@ -355,58 +400,47 @@ class Ears:
             self.loop()
 
     def loop(self):
+        """Always listening. Every request starts with the name: "Sahbi, look at my screen"."""
         awake_until = 0.0
         for pcm in self.utterances():
-            now = time.time()
-            if tools.has_pending() and len(pcm) < self.RATE * 4:      # "cancel!" while an email waits
-                t = norm(self.transcribe(pcm, self.fast, 'Cancel. Annule. Stop.'))
+            now, secs = time.time(), len(pcm) / self.RATE
+            if tools.has_pending() and secs < 4:                      # "cancel!" while an email waits
+                t = norm(self.transcribe(pcm, self.fast, None))
                 if len(t.split()) <= 4 and (any(w in t.split() for w in CANCEL_WORDS) or 'لا' in t):
                     log('voice cancel:', t)
                     tools.cancel_email()
                     continue
-            if self.listen_now.is_set() or now < awake_until:
+            if self.listen_now.is_set() or now < awake_until:         # mic button, or right after "Sahbi?"
                 self.listen_now.clear()
+                awake_until = 0.0
                 push('state', state='thinking')
-                text = self.transcribe(pcm, self.good, 'Salam Sahbi. Darija, français, English.')
+                text = self.transcribe(pcm, self.good, STT_HINT)
                 log('heard command:', text)
+                text = split_wake(text) or text                       # "Sahbi, ..." again is fine
                 if len(norm(text).strip()) < 2:
                     push('state', state='idle')
                     continue
-                awake_until = 0.0
                 threading.Thread(target=chat, args=(text, 'voice'), daemon=True).start()
                 continue
+            first = self.transcribe(pcm[:self.RATE * 4], self.fast, None)   # no hint: a hint makes it skip the name
             if DEBUG:
-                log(f'clip {len(pcm) / self.RATE:.1f}s rms {float(np.sqrt(np.mean(pcm ** 2))):.4f}')
-            if len(pcm) > self.RATE * 5:      # long talk: the wake phrase would be at the start
-                pcm = pcm[:self.RATE * 3]
-            text = self.transcribe(pcm, self.fast, 'Salam Sahbi.')
-            if text and DEBUG:
-                log('heard:', text)
-            if not is_wake(text) and half_wake(text) and len(pcm) < self.RATE * 3.5:
-                text = self.transcribe(pcm, self.good, 'Salam Sahbi.')
-            if is_wake(text):
-                rest = re.split(r'(?i)sa\w*b\w*i|صاحبي|صحبي', text, maxsplit=1)
-                rest = rest[1].strip(' ,.!?') if len(rest) > 1 else ''
-                if len(rest.split()) > 14:          # a long sentence = song / video, not a request
-                    log('ignored wake-like speech:', text[:120])
-                    continue
-                log('wake phrase heard:', text[:120])
-                self.on_wake(rest)
-                awake_until = 0 if len(rest) > 6 else time.time() + 10
-
-    def on_wake(self, rest):
-        log('WAKE', rest)
-        if not page_open():
-            tools.open_url(URL)
-        push('wake')
-        if len(rest) > 6:
-            threading.Thread(target=chat, args=(rest, 'voice'), daemon=True).start()
-            return
-        h = datetime.now().hour
-        greet = ('Good morning' if h < 12 else 'Hey' if h < 18 else 'Good evening') + ', sahbi! What do you need?'
-        push('reply', text=greet)
-        say(greet, wait=True)
-        push('state', state='listening')
+                log(f'clip {secs:.1f}s -> {first!r}')
+            if not maybe_wake(first):
+                continue
+            text = self.transcribe(pcm, self.good, STT_HINT)
+            rest = split_wake(text)
+            if rest is None or len(rest.split()) > 18:                # not for Sahbi / a song or video
+                log('not for me:', repr(first), '->', repr(text[:100]))
+                continue
+            log('WAKE:', text[:140])
+            push('wake')
+            if len(norm(rest)) >= 3:
+                threading.Thread(target=chat, args=(rest, 'voice'), daemon=True).start()
+            else:                                                     # just "Sahbi" -> answer and wait for the request
+                push('reply', text='Yes?')
+                say('Yes?', wait=True)
+                push('state', state='listening')
+                awake_until = time.time() + 10
 
     def unmute(self):
         with self.audio.mutex:

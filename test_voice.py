@@ -27,4 +27,4 @@ for path in sys.argv[1:]:
     for _ in range(40):
         ears.audio.put(silence); time.sleep(0.03)
     time.sleep(3.2)          # like a person pausing after the greeting
-time.sleep(25)
+time.sleep(12)

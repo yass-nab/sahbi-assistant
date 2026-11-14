@@ -38,6 +38,7 @@ SPECS = [
     fn('open_app', 'Open an app or place: ' + ', '.join(APPS), {'name': S}, ['name']),
     fn('look_at_screen', 'Look at his screen right now and answer a question about it (explain an error, read text, '
        'describe a chart). Use when he says "this", "on my screen", "look".', {'question': S}, ['question']),
+    fn('take_screenshot', 'Save a screenshot of the screen as an image file (use when he says "screenshot").'),
     fn('check_email', 'List his recent Gmail messages. kind: important (default), unread, recruiters, today. '
        'Or search with Gmail syntax.', {'kind': {**S, 'enum': ['important', 'unread', 'recruiters', 'today']}, 'search': S}),
     fn('read_email', 'Read message number n from the last check_email list.', {'n': N}, ['n']),
@@ -238,6 +239,16 @@ def look_at_screen(question='What is on my screen?'):
         return '[What the vision model sees on the screen]\n' + vision.look(question)
     except Exception as e:  # noqa: BLE001
         return f'Could not look at the screen: {e}'
+
+
+def take_screenshot():
+    from PIL import ImageGrab
+    folder = Path(config.get('screenshots_dir') or Path.home() / 'Pictures' / 'Screenshots')
+    folder.mkdir(parents=True, exist_ok=True)
+    f = folder / f'Sahbi {datetime.now():%Y-%m-%d %H.%M.%S}.png'
+    ImageGrab.grab(all_screens=False).save(f)
+    notify('screenshot', path=str(f))
+    return f'Screenshot saved in Pictures, Screenshots.\n{f}'
 
 
 # ------------------------------------------------------------------ email
