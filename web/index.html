@@ -225,50 +225,75 @@ header{display:flex;align-items:center;gap:10px;padding:2px 4px 0;position:relat
 .foot{font-size:11.5px;color:var(--faint);text-align:center;padding:2px 8px}
 .mapcta{width:100%;margin-top:10px}
 
-/* ======================= BUBBLE MAP ======================= */
-.mapview{position:absolute;inset:52px 0 0 0;z-index:4;border-radius:24px;overflow:hidden;border:1px solid var(--line);
-  background:radial-gradient(120% 90% at 50% 0%,color-mix(in srgb,var(--accent) 7%,var(--bg)),var(--bg) 70%);
-  opacity:0;transform:scale(.97);pointer-events:none;transition:opacity .45s var(--ease),transform .45s var(--ease)}
-.mapview.open{opacity:1;transform:none;pointer-events:auto}
+/* ======================= BUBBLE MAP (own flat dark look, same in every theme) ======================= */
+.mapview{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;background:#0a0b10;color:#e6e8ee;font-family:var(--font);
+  --ml:#1e212b;--md:#8b91a3;--mf:#5a6072;--mp:#0f1117;--mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.mapview.open{opacity:1;pointer-events:auto}
+.mbar{height:52px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid var(--ml);background:var(--mp)}
+.mbar .sp{flex:1}
+.mtitle{font:600 13px var(--font);letter-spacing:.02em;color:#fff;padding-right:10px;margin-right:2px;border-right:1px solid var(--ml);height:20px;display:flex;align-items:center}
+.mb{height:32px;padding:0 10px;border:1px solid var(--ml);border-radius:8px;background:#151821;color:#e6e8ee;font:500 12.5px var(--font);cursor:pointer;display:flex;align-items:center;gap:6px}
+.mb:hover{border-color:#343a4a;background:#1a1e29}
+.mb svg{width:15px;height:15px}
+.crumbs{display:flex;align-items:center;gap:2px;min-width:0}
+.crumbs button{font:500 13px var(--font);color:var(--md);background:none;border:0;cursor:pointer;padding:4px 6px;border-radius:6px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crumbs button:hover{color:#fff;background:#171a24}
+.crumbs button.cur{color:#fff;cursor:default;background:none}
+.crumbs .sep{color:var(--mf);font-size:12px}
+.seg{display:flex;border:1px solid var(--ml);border-radius:8px;overflow:hidden;background:#151821}
+.seg button{font:500 12.5px var(--font);color:var(--md);background:none;border:0;padding:0 12px;height:30px;cursor:pointer}
+.seg button.on{background:#232838;color:#fff}
+.msearch{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border:1px solid var(--ml);border-radius:8px;background:#151821;color:var(--md)}
+.msearch:focus-within{border-color:#3d4458}
+.msearch input{background:none;border:0;outline:0;color:#e6e8ee;font:13px var(--font);width:210px}
+.msearch input::placeholder{color:var(--mf)}
+.mbody{flex:1;display:flex;min-height:0}
+.mcanvas{position:relative;flex:1;min-width:0;background-image:radial-gradient(#191c26 1px,transparent 1px);background-size:28px 28px}
 #mapc{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
 #mapc.drag{cursor:grabbing}
-.maptop{position:absolute;left:14px;right:14px;top:12px;display:flex;gap:8px;align-items:center;z-index:2;pointer-events:none}
-.maptop>*{pointer-events:auto}
-.crumbs{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}
-.crumbs button{font:600 14px var(--display);color:var(--dim);background:none;border:0;cursor:pointer;padding:4px 6px;border-radius:8px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.crumbs button:hover{color:var(--text);background:color-mix(in srgb,var(--text) 6%,transparent)}
-.crumbs button.cur{color:var(--text);cursor:default}
-.crumbs .sep{color:var(--faint)}
-.mapsub{font-size:12px;color:var(--dim);margin:2px 0 0 6px}
-.seg{display:flex;background:var(--glass2);border:1px solid var(--line);border-radius:12px;padding:3px;backdrop-filter:blur(14px)}
-.seg button{font:inherit;font-size:12.5px;color:var(--dim);background:none;border:0;border-radius:9px;padding:5px 10px;cursor:pointer}
-.seg button.on{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--text)}
-.msearch{display:flex;align-items:center;gap:6px;background:var(--glass2);border:1px solid var(--line);border-radius:12px;padding:3px 10px;backdrop-filter:blur(14px)}
-.msearch input{background:none;border:0;outline:0;color:var(--text);font:inherit;font-size:13px;width:170px;padding:5px 0}
-.legend{position:absolute;left:12px;bottom:12px;right:12px;display:flex;gap:6px;flex-wrap:wrap;z-index:2;pointer-events:none}
-.legend>*{pointer-events:auto}
-.legend button,.legend span.tag{display:flex;align-items:center;gap:6px;font:inherit;font-size:12px;color:var(--text);background:var(--glass2);border:1px solid var(--line);border-radius:99px;padding:4px 10px;cursor:pointer;backdrop-filter:blur(12px);transition:.2s}
-.legend span.tag{cursor:default;color:var(--dim)}
-.legend button:hover{border-color:var(--line2)}
-.legend i{width:10px;height:10px;border-radius:50%}
-.hint{position:absolute;right:16px;top:62px;z-index:2;font-size:11.5px;color:var(--faint);text-align:right;pointer-events:none;line-height:1.5}
-.minfo{position:absolute;right:14px;top:62px;width:310px;max-height:calc(100% - 130px);overflow:auto;background:var(--glass2);border:1px solid var(--line2);border-radius:18px;padding:14px 16px;backdrop-filter:blur(20px);z-index:3;
-  box-shadow:0 20px 50px #0007;opacity:0;transform:translateY(-6px);pointer-events:none;transition:.3s var(--ease)}
-.minfo.open{opacity:1;transform:none;pointer-events:auto}
-.minfo h5{margin:0 0 4px;font-size:15px;word-break:break-word}
-.minfo .meta{font-size:12px;color:var(--dim);word-break:break-all;margin-bottom:10px}
-.minfo .row{display:flex;gap:8px;flex-wrap:wrap}
-.minfo .txt{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:10px;max-height:240px;overflow:auto}
-.conn{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
-.conn .lh{margin-bottom:4px}
-.conn a{display:flex;align-items:center;gap:8px;padding:5px 4px;border-radius:8px;color:var(--text);text-decoration:none;font-size:12.5px;cursor:pointer}
-.conn a:hover{background:color-mix(in srgb,var(--text) 6%,transparent)}
-.conn a i{flex:none;width:9px;height:9px;border-radius:50%}
+.mstats{position:absolute;left:14px;bottom:12px;font:11.5px var(--mono);color:var(--mf);pointer-events:none}
+.mzoom{position:absolute;right:14px;bottom:12px;display:flex;flex-direction:column;border:1px solid var(--ml);border-radius:8px;overflow:hidden;background:#151821}
+.mzoom button{width:32px;height:32px;border:0;border-bottom:1px solid var(--ml);background:none;color:#cfd3de;font:16px var(--font);cursor:pointer;display:grid;place-items:center}
+.mzoom button:last-child{border:0}
+.mzoom button:hover{background:#1d2130}
+.mzoom svg{width:14px;height:14px}
+.mpanel{width:340px;flex:none;border-left:1px solid var(--ml);background:var(--mp);display:flex;flex-direction:column;min-height:0}
+.minfo{display:none;padding:14px 16px 12px;border-bottom:1px solid var(--ml);max-height:58%;overflow:auto}
+.minfo.open{display:block}
+.mk{font:600 10.5px var(--font);letter-spacing:.09em;text-transform:uppercase;color:var(--mf);display:flex;align-items:center;gap:7px}
+.mk i{width:8px;height:8px;border-radius:50%}
+.minfo h5{margin:7px 0 4px;font:600 15px/1.3 var(--font);color:#fff;word-break:break-word}
+.minfo .meta{font:11.5px/1.5 var(--mono);color:var(--md);word-break:break-all;margin-bottom:11px}
+.minfo .txt{font-size:13px;color:#d5d8e0;line-height:1.5;margin:8px 0 11px;max-height:200px;overflow:auto}
+.minfo .row{display:flex;gap:6px;flex-wrap:wrap}
+.mbtn{height:30px;padding:0 11px;border:1px solid #2a2f3d;border-radius:7px;background:#171a24;color:#e6e8ee;font:500 12.5px var(--font);cursor:pointer}
+.mbtn:hover{background:#1f2433}
+.mbtn.pri{background:#e6e8ee;border-color:#e6e8ee;color:#0a0b10}
+.mbtn.pri:hover{background:#fff}
+.mbtn.dng{color:#f0668f;border-color:#4a2433}
+.conn{margin-top:12px}
+.conn a{display:flex;align-items:center;gap:9px;height:28px;padding:0 6px;margin:0 -6px;border-radius:6px;color:#d5d8e0;font-size:12.5px;cursor:pointer}
+.conn a:hover{background:#171a24}
+.conn a i{flex:none;width:7px;height:7px;border-radius:50%}
 .conn a span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.conn a small{color:var(--faint)}
-.mtip{position:absolute;z-index:3;pointer-events:none;font-size:12px;background:var(--glass2);border:1px solid var(--line2);border-radius:10px;padding:5px 9px;backdrop-filter:blur(12px);opacity:0;transition:opacity .15s;white-space:nowrap;max-width:340px;overflow:hidden;text-overflow:ellipsis}
+.conn a small{font:11px var(--mono);color:var(--mf)}
+.mlh{display:flex;justify-content:space-between;padding:13px 16px 8px;font:600 10.5px var(--font);letter-spacing:.09em;text-transform:uppercase;color:var(--mf)}
+.mlist{flex:1;overflow:auto;padding:0 6px 10px}
+.mlist::-webkit-scrollbar,.minfo::-webkit-scrollbar{width:8px}
+.mlist::-webkit-scrollbar-thumb,.minfo::-webkit-scrollbar-thumb{background:#232838;border-radius:4px}
+.mrow{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:6px;font-size:13px;color:#d5d8e0;cursor:pointer}
+.mrow[hidden]{display:none}
+.mrow:hover{background:#171a24}
+.mrow.on{background:#1d2230;color:#fff}
+.mrow .rk{width:24px;flex:none;font:11px var(--mono);color:var(--mf)}
+.mrow i{width:8px;height:8px;border-radius:50%;flex:none}
+.mrow .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .vl{flex:none;font:11.5px var(--mono);color:var(--md)}
+.mtip{position:absolute;z-index:3;pointer-events:none;font-size:12px;color:#e6e8ee;background:#171a24;border:1px solid #2a2f3d;border-radius:6px;padding:5px 8px;opacity:0;white-space:nowrap;max-width:340px;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:900px){.mpanel{display:none}.msearch input{width:110px}}
 
-.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);opacity:0;background:var(--glass2);border:1px solid var(--line2);padding:10px 16px;border-radius:14px;font-size:14px;backdrop-filter:blur(16px);transition:.4s var(--ease);z-index:9;pointer-events:none}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);opacity:0;background:var(--glass2);border:1px solid var(--line2);padding:10px 16px;border-radius:14px;font-size:14px;backdrop-filter:blur(16px);transition:.4s var(--ease);z-index:60;pointer-events:none}
 .toast.show{transform:translate(-50%,0);opacity:1}
 
 @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
@@ -279,6 +304,34 @@ header{display:flex;align-items:center;gap:10px;padding:2px 4px 0;position:relat
 </style>
 </head>
 <body>
+<div class="mapview" id="mapview">
+      <div class="mbar">
+        <div class="mtitle">Document map</div>
+        <button class="mb" id="mapBack" title="Back (Backspace)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div class="crumbs" id="crumbs"></div>
+        <span class="sp"></span>
+        <label class="msearch"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="mapQ" placeholder="Search documents"></label>
+        <div class="seg" id="mapMode"><button data-m="topics" class="on">Topics</button><button data-m="all">All documents</button></div>
+        <button class="mb" id="mapClose" title="Back to chat (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>Close</button>
+      </div>
+      <div class="mbody">
+        <div class="mcanvas">
+          <canvas id="mapc"></canvas>
+          <div class="mstats" id="mapSub">loading…</div>
+          <div class="mzoom">
+            <button id="mapIn" title="Zoom in">+</button>
+            <button id="mapOut" title="Zoom out">−</button>
+            <button id="mapFit" title="Fit (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+          </div>
+          <div class="mtip" id="mtip"></div>
+        </div>
+        <aside class="mpanel">
+          <div class="minfo" id="minfo"></div>
+          <div class="mlh"><span id="listTitle">Topics</span><span id="listCount"></span></div>
+          <div class="mlist" id="mlist"></div>
+        </aside>
+      </div>
+    </div>
 <canvas id="bgfx"></canvas>
 <div class="app" id="app">
   <div class="main">
@@ -312,28 +365,12 @@ header{display:flex;align-items:center;gap:10px;padding:2px 4px 0;position:relat
       <button data-q="Check my important emails">📥 Emails</button>
       <button data-q="Find data analyst jobs for me">🧭 Jobs</button>
       <button data-q="Look at my screen and explain what you see">👁️ My screen</button>
-      <button data-map="1">🫧 Bubble map</button>
+      <button data-map="1">◎ Document map</button>
       <button data-q="Email my French CV to ">✉️ Email my CV…</button>
       <button data-q="Send my English CV to my phone">📱 CV → phone</button>
       <button data-q="Remind me in 25 minutes to take a break">⏱️ Break 25 min</button>
     </div>
 
-    <div class="mapview" id="mapview">
-      <canvas id="mapc"></canvas>
-      <div class="maptop">
-        <button class="iconbtn" id="mapBack" title="Back (Backspace)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-        <div style="min-width:0"><div class="crumbs" id="crumbs"></div><div class="mapsub" id="mapSub">loading…</div></div>
-        <span class="sp"></span>
-        <div class="seg" id="mapMode"><button data-m="topics" class="on">Topics</button><button data-m="all">All documents</button></div>
-        <label class="msearch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="mapQ" placeholder="Find a document…"></label>
-        <button class="iconbtn" id="mapFit" title="Fit (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
-        <button class="iconbtn" id="mapClose" title="Back to chat (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-      </div>
-      <div class="minfo" id="minfo"></div>
-      <div class="mtip" id="mtip"></div>
-      <div class="legend" id="legend"></div>
-      <div class="hint">drag bubbles · scroll to zoom · click to see links · double-click to enter</div>
-    </div>
   </div>
 
   <aside class="side">
@@ -344,7 +381,7 @@ header{display:flex;align-items:center;gap:10px;padding:2px 4px 0;position:relat
     </div>
     <div class="card"><h3>Markets</h3><div id="markets"><div class="kv"><span>…</span></div></div></div>
     <div class="card"><h3>Sent by Sahbi</h3><div id="mailSide" class="sentlist"><div class="foot">…</div></div></div>
-    <div class="card"><h3>Memory</h3><div id="mem" class="sentlist"><div class="foot">…</div></div><button class="btn mapcta" id="memMap">🫧 Open bubble map</button></div>
+    <div class="card"><h3>Memory</h3><div id="mem" class="sentlist"><div class="foot">…</div></div><button class="btn mapcta" id="memMap">Open document map</button></div>
     <div class="card"><h3>Laptop</h3><div id="pc"></div></div>
     <div class="card"><h3>Tech news</h3><ul class="news" id="news"></ul></div>
     <div class="foot">100% local · Whisper + Qwen on your RTX 3060</div>
@@ -554,22 +591,27 @@ addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 't'){ const i = THEMES.indexOf(root.dataset.theme); setTheme(THEMES[(i + 1) % THEMES.length]); }
 });
 
-/* ======================= BUBBLE MAP: linked, draggable, enter / back ======================= */
+/* ======================= BUBBLE MAP: flat linked bubbles + ranked list, drag / enter / back ======================= */
 const mc = $('#mapc'), mx = mc.getContext('2d');
 const EXT = { pdf:'PDF', docx:'Word', pptx:'PowerPoint', ipynb:'Notebook', md:'Markdown', txt:'Text' };
-Object.assign(map, { data:null, stack:[], links:[], alpha:1, fade:1, drag:null, view:{x:0,y:0,k:1}, q:'' });
-const colorOf = c => c === 'mem' ? css('--accent') : (palette.map[c % palette.map.length] || '#888888');
+const MAPCOL = ['#8b7cf6','#2dd4a7','#f0668f','#f5b83d','#4aa3f5','#f08a4b','#b5d651','#22c5d6','#d67be8','#8f98ad'];
+const MONO = 'ui-monospace,"Cascadia Mono",Consolas,monospace';
+Object.assign(map, { data:null, stack:[], links:[], rows:[], alpha:1, fade:1, drag:null, view:{x:0,y:0,k:1}, q:'' });
+const colorOf = c => c === 'mem' ? '#f5c451' : MAPCOL[c % MAPCOL.length];
 const rgbaOf = (h, a) => { const c = hex(h); return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
+const pctText = p => (p >= 10 ? p.toFixed(1) : p.toFixed(2)) + '%';
 const sub = t => $('#mapSub').textContent = t;
+const matches = n => !map.q || (n.label + ' ' + (n.rel || '') + ' ' + (n.text || '')).toLowerCase().includes(map.q);
 
 function openMap(){
   map.open = true; $('#mapview').classList.add('open'); $('#mapBtn').classList.add('active'); sizeMap();
   if (!map.data) loadMap(); else fitMap(true);
 }
-function closeMap(){ if (!map.open) return; map.open = false; $('#mapview').classList.remove('open'); $('#mapBtn').classList.remove('active'); closeInfo(); }
+function closeMap(){ if (!map.open) return; map.open = false; $('#mapview').classList.remove('open'); $('#mapBtn').classList.remove('active'); }
 $('#mapBtn').onclick = () => map.open ? closeMap() : openMap();
 $('#mapClose').onclick = closeMap; $('#memMap').onclick = openMap;
 $('#mapFit').onclick = () => fitMap(true);
+$('#mapIn').onclick = () => zoomBy(1.4); $('#mapOut').onclick = () => zoomBy(1 / 1.4);
 $('#mapBack').onclick = () => back();
 $('#mapMode').querySelectorAll('button').forEach(b => b.onclick = () => go({ type: b.dataset.m }, true));
 
@@ -583,7 +625,7 @@ async function loadMap(){
   sub('reading your index…');
   try { map.data = await (await fetch('/api/map')).json(); } catch { sub('could not load the map'); return; }
   map.ready = true;
-  map.recolor = () => legend();
+  map.recolor = () => {};
   const u = new URLSearchParams(location.search);          // ?view=all  ?topic=AI Content  ?doc=screenplay
   go({ type: u.get('view') === 'all' ? 'all' : 'topics' }, true);
   const tq = (u.get('topic') || '').toLowerCase(), dq = (u.get('doc') || '').toLowerCase();
@@ -609,8 +651,9 @@ async function render(lv){
   closeInfo(); map.hover = map.sel = null;
   const D = map.data; let nodes = [], links = [];
   if (lv.type === 'topics'){
-    nodes = D.clusters.map(c => ({ kind:'topic', id:c.id, label:c.label, sub:`${c.count} docs`, cluster:c.id, count:c.count, r: 30 + Math.sqrt(c.count) * 5.5 }));
-    if (D.memory?.length) nodes.push({ kind:'memhub', id:'mem', label:'Memory', sub:`${D.memory.length} facts`, cluster:'mem', r: 26 + Math.sqrt(D.memory.length) * 4 });
+    const tot = D.nodes.length || 1;
+    nodes = D.clusters.map(c => ({ kind:'topic', id:c.id, label:c.label, sub:`${c.count} documents`, val:pctText(c.count / tot * 100), cluster:c.id, count:c.count, r: 26 + Math.sqrt(c.count) * 6 }));
+    if (D.memory?.length) nodes.push({ kind:'memhub', id:'mem', label:'Memory', sub:`${D.memory.length} facts`, val:`${D.memory.length} facts`, cluster:'mem', r: 22 + Math.sqrt(D.memory.length) * 4 });
     const at = Object.fromEntries(nodes.map(n => [n.id, n]));
     links = D.topic_links.filter(l => at[l.a] && at[l.b]).map(l => ({ s:at[l.a], t:at[l.b], w:l.w }));
     lv.label = 'Topics';
@@ -619,13 +662,15 @@ async function render(lv){
     D.nodes.forEach((n, i) => {
       if (!all && n.cluster !== lv.id) return;
       byIdx[i] = { kind:'doc', label:n.name, path:n.path, rel:n.rel, ext:n.ext, size:n.size, cluster:n.cluster,
-                   r: (all ? 4 : 7) + Math.min(all ? 14 : 22, Math.sqrt(n.size) * (all ? 1.6 : 2.7)) };
+                   r: (all ? 4 : 7) + Math.min(all ? 16 : 26, Math.sqrt(n.size) * (all ? 1.7 : 3)) };
     });
     nodes = Object.values(byIdx);
+    const tot = nodes.reduce((s, n) => s + n.size, 0) || 1;
+    nodes.forEach(n => n.val = pctText(n.size / tot * 100));
     links = D.links.filter(l => byIdx[l.a] && byIdx[l.b]).map(l => ({ s:byIdx[l.a], t:byIdx[l.b], w:l.w }));
     lv.label = all ? 'All documents' : (D.clusters.find(c => c.id === lv.id) || {}).label;
   } else if (lv.type === 'memory'){
-    nodes = (D.memory || []).map(m => ({ kind:'mem', label:m.fact, fact:m.fact, added:m.added, cluster:'mem', r:16 }));
+    nodes = (D.memory || []).map(m => ({ kind:'mem', label:m.fact, fact:m.fact, added:m.added, val:m.added, cluster:'mem', r:14 }));
     lv.label = 'Memory';
   } else if (lv.type === 'doc'){
     sub('opening…');
@@ -633,54 +678,56 @@ async function render(lv){
     try { d = await (await fetch('/api/map/doc?path=' + encodeURIComponent(lv.path))).json(); } catch { d = { error:true }; }
     if (d.error){ toast('That file is not in the index'); map.stack.pop(); return render(map.stack[map.stack.length - 1]); }
     const n = d.node;
-    const center = { kind:'doc', center:true, label:n.name, path:n.path, rel:n.rel, ext:n.ext, size:n.size, cluster:n.cluster, r:48, fx:0, fy:0 };
+    const center = { kind:'doc', center:true, label:n.name, path:n.path, rel:n.rel, ext:n.ext, size:n.size, cluster:n.cluster, r:46, fx:0, fy:0 };
     nodes = [center];
-    d.parts.forEach((t, k) => { const p = { kind:'part', label:`Section ${k + 1}`, text:t, doc:n.name, path:n.path, cluster:n.cluster, r: 7 + Math.min(5, t.length / 220) }; nodes.push(p); links.push({ s:center, t:p, w:.3, short:true }); });
-    d.related.forEach(r => { const o = { kind:'doc', label:r.name, path:r.path, rel:r.rel, ext:r.ext, size:r.size, cluster:r.cluster, sim:r.w, r: 12 + Math.min(16, Math.sqrt(r.size) * 2) }; nodes.push(o); links.push({ s:center, t:o, w: Math.max(.08, (r.w - .75) / .25) }); });
+    d.related.forEach(r => { const o = { kind:'doc', label:r.name, path:r.path, rel:r.rel, ext:r.ext, size:r.size, cluster:r.cluster, sim:r.w, val:Math.round(r.w * 100) + '% match', r: 12 + Math.min(18, Math.sqrt(r.size) * 2.2) }; nodes.push(o); links.push({ s:center, t:o, w: Math.max(.08, (r.w - .75) / .25) }); });
+    d.parts.forEach((t, k) => { const p = { kind:'part', label:`Section ${k + 1}`, text:t, doc:n.name, path:n.path, cluster:n.cluster, val:'', r: 6 + Math.min(5, t.length / 220) }; nodes.push(p); links.push({ s:center, t:p, w:.3, short:true }); });
     lv.label = n.name; lv.detail = d;
   }
+  if (lv.type !== 'doc') nodes.sort((a, b) => (b.size || b.count || 0) - (a.size || a.count || 0));                // biggest first: centre of the map, top of the list
   for (const n of nodes) n.nb = new Map();
   for (const l of links){ l.s.nb.set(l.t, l.w); l.t.nb.set(l.s, l.w); }
-  nodes.forEach((n, k) => { const a = k * 2.399963, rr = 8 + Math.sqrt(k) * 16; n.x = n.fx ?? Math.cos(a) * rr; n.y = n.fy ?? Math.sin(a) * rr; n.vx = n.vy = 0; n.ph = Math.random() * 6.283; });
+  nodes.forEach((n, k) => { const a = k * 2.399963, rr = 8 + Math.sqrt(k) * 16; n.x = n.fx ?? Math.cos(a) * rr; n.y = n.fy ?? Math.sin(a) * rr; n.vx = n.vy = 0; });
   map.nodes = nodes; map.links = links; map.alpha = 1; map.level = lv;
   for (let i = 0; i < 260; i++) tick();
   map.alpha = .25; map.fade = 0;
-  fitMap(true, .55);
-  crumbs(); legend();
+  fitMap(false);
+  crumbs(); buildList();
   $('#mapMode').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === map.stack[0].type));
   const L = links.length;
-  sub(lv.type === 'topics' ? `${D.clusters.length} topics · ${D.nodes.length} documents · ${D.links.length} links — double-click a topic to enter`
-    : lv.type === 'all' ? `${nodes.length} documents · ${L} links between similar documents`
-    : lv.type === 'topic' ? `${nodes.length} documents · ${L} links — drag them, double-click one to enter`
-    : lv.type === 'memory' ? `${nodes.length} things Sahbi remembers`
-    : `${EXT[lv.detail.node.ext] || lv.detail.node.ext} · ${lv.detail.node.size} passages · ${lv.detail.parts.length} sections · ${lv.detail.related.length} related documents`);
+  sub(lv.type === 'topics' ? `${D.clusters.length} topics  ·  ${D.nodes.length} documents  ·  ${D.links.length} links`
+    : lv.type === 'memory' ? `${nodes.length} facts`
+    : lv.type === 'doc' ? `${(EXT[lv.detail.node.ext] || lv.detail.node.ext).toUpperCase()}  ·  ${lv.detail.parts.length} sections  ·  ${lv.detail.related.length} related`
+    : `${nodes.length} documents  ·  ${L} links`);
 }
 
 function crumbs(){
   const box = $('#crumbs');
-  box.innerHTML = map.stack.map((lv, i) => (i ? '<span class="sep">›</span>' : '') +
+  box.innerHTML = map.stack.map((lv, i) => (i ? '<span class="sep">/</span>' : '') +
     `<button data-i="${i}" class="${i === map.stack.length - 1 ? 'cur' : ''}" title="${esc(lv.label)}">${esc(lv.label || '…')}</button>`).join('');
   box.querySelectorAll('button').forEach(b => b.onclick = () => { const i = +b.dataset.i; if (i < map.stack.length - 1){ map.stack.length = i + 1; render(map.stack[i]); } });
-  $('#mapBack').style.visibility = map.stack.length > 1 ? 'visible' : 'hidden';
+  $('#mapBack').style.display = map.stack.length > 1 ? '' : 'none';
 }
 
-function legend(){
-  if (!map.data || !map.level) return;
-  const lv = map.level, D = map.data, box = $('#legend');
-  if (lv.type === 'topics' || lv.type === 'all'){
-    box.innerHTML = D.clusters.map(c => `<button data-c="${c.id}"><i style="background:${colorOf(c.id)};box-shadow:0 0 8px ${colorOf(c.id)}"></i>${esc(c.label)} <span style="opacity:.6">${c.count}</span></button>`).join('');
-    box.querySelectorAll('button').forEach(b => b.onclick = () => go({ type:'topic', id:+b.dataset.c }));
-  } else if (lv.type === 'doc'){
-    const seen = [...new Set(map.nodes.filter(n => n.kind === 'doc' && !n.center).map(n => n.cluster))];
-    box.innerHTML = `<span class="tag"><i style="background:${colorOf(lv.detail.node.cluster)}"></i>small = sections of this document</span>`
-      + seen.map(c => `<span class="tag"><i style="background:${colorOf(c)}"></i>${esc((D.clusters.find(x => x.id === c) || {}).label)}</span>`).join('');
-  } else {
-    const c = lv.type === 'memory' ? 'mem' : lv.id;
-    box.innerHTML = `<span class="tag"><i style="background:${colorOf(c)}"></i>${esc(lv.label)} · ${map.nodes.length}</span>`;
-  }
+/* ---------- ranked list (right panel) ---------- */
+function buildList(){
+  const rows = map.nodes.filter(n => !n.center), box = $('#mlist');
+  $('#listTitle').textContent = { topics:'Topics', all:'Documents', topic:'Documents', memory:'Memory', doc:'Related documents and sections' }[map.level.type];
+  $('#listCount').textContent = rows.length;
+  box.innerHTML = rows.map((n, i) => `<div class="mrow" data-i="${i}" title="${esc(n.label)}"><span class="rk">${i + 1}</span><i style="background:${colorOf(n.cluster)}"></i><span class="nm">${esc(n.label)}</span><span class="vl">${esc(n.val || '')}</span></div>`).join('');
+  box.scrollTop = 0; map.rows = rows;
+  box.querySelectorAll('.mrow').forEach(el => {
+    const n = rows[+el.dataset.i]; n.el = el;
+    el.onmouseenter = () => { map.hover = n; };
+    el.onmouseleave = () => { if (map.hover === n) map.hover = null; };
+    el.onclick = () => { select(n); zoomTo(n.x, n.y, Math.max(map.view.k, 1)); };
+    el.ondblclick = () => enter(n);
+  });
+  filterList();
 }
+function filterList(){ for (const n of map.rows) if (n.el) n.el.hidden = !matches(n); }
 
-/* ---------- physics (force-directed, like a holders bubble map) ---------- */
+/* ---------- physics (force-directed) ---------- */
 function tick(){
   const N = map.nodes, a = map.alpha;
   if (a < .003 && !map.drag) return;
@@ -689,7 +736,7 @@ function tick(){
     for (let j = i + 1; j < N.length; j++){
       const q = N[j]; let dx = q.x - p.x, dy = q.y - p.y;
       if (dx > 500 || dx < -500 || dy > 500 || dy < -500) continue;
-      const d2 = dx * dx + dy * dy || .01, d = Math.sqrt(d2), min = p.r + q.r + 6;
+      const d2 = dx * dx + dy * dy || .01, d = Math.sqrt(d2), min = p.r + q.r + 5;
       const f = Math.min(6, 900 * (p.r + q.r) / 30 / d2) * a;          // everyone pushes everyone a little
       const fx = dx / d * f, fy = dy / d * f;
       p.vx -= fx; p.vy -= fy; q.vx += fx; q.vy += fy;
@@ -713,31 +760,27 @@ function tick(){
   map.alpha = Math.max(map.drag ? .3 : 0, a * .985);
 }
 
-function fitMap(anim, fromScale){
+function animView(target, ms){
+  const from = {...map.view}, t0 = performance.now();
+  (function tk(now){ const t = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - t, 3);
+    map.view = { k: lerp(from.k, target.k, e), x: lerp(from.x, target.x, e), y: lerp(from.y, target.y, e) };
+    if (t < 1) requestAnimationFrame(tk); })(t0);
+}
+function fitMap(anim){
   if (!map.nodes.length || !map.W) return;
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  for (const n of map.nodes){ x0 = Math.min(x0, n.x - n.r); y0 = Math.min(y0, n.y - n.r); x1 = Math.max(x1, n.x + n.r); y1 = Math.max(y1, n.y + n.r + 16); }
-  const top = 84, bottom = 70;
-  const k = Math.min((map.W - 80) / (x1 - x0 || 1), (map.H - top - bottom) / (y1 - y0 || 1), 2.4);
-  const target = { k, x: map.W / 2 - (x0 + x1) / 2 * k, y: top + (map.H - top - bottom) / 2 - (y0 + y1) / 2 * k };
-  if (fromScale){ const k0 = k * fromScale; map.view = { k:k0, x: map.W / 2 - (x0 + x1) / 2 * k0, y: target.y + ((y0 + y1) / 2) * (k - k0) }; }
-  if (!anim){ map.view = target; return; }
-  const from = {...map.view}, t0 = performance.now();
-  (function tk(now){ const t = Math.min(1, (now - t0) / 700), e = 1 - Math.pow(1 - t, 3);
-    map.view = { k: lerp(from.k, target.k, e), x: lerp(from.x, target.x, e), y: lerp(from.y, target.y, e) };
-    if (t < 1) requestAnimationFrame(tk); })(t0);
+  for (const n of map.nodes){ x0 = Math.min(x0, n.x - n.r); y0 = Math.min(y0, n.y - n.r); x1 = Math.max(x1, n.x + n.r); y1 = Math.max(y1, n.y + n.r); }
+  const pad = 48, k = Math.min((map.W - pad * 2) / (x1 - x0 || 1), (map.H - pad * 2) / (y1 - y0 || 1), 2.2);
+  const target = { k, x: map.W / 2 - (x0 + x1) / 2 * k, y: map.H / 2 - (y0 + y1) / 2 * k };
+  if (anim) animView(target, 450); else map.view = target;
 }
-function zoomTo(wx, wy, k){
-  const from = {...map.view}, target = { k, x: map.W / 2 - wx * k, y: map.H / 2 - wy * k }, t0 = performance.now();
-  (function tk(now){ const t = Math.min(1, (now - t0) / 600), e = 1 - Math.pow(1 - t, 3);
-    map.view = { k: lerp(from.k, target.k, e), x: lerp(from.x, target.x, e), y: lerp(from.y, target.y, e) };
-    if (t < 1) requestAnimationFrame(tk); })(t0);
-}
+function zoomTo(wx, wy, k){ animView({ k, x: map.W / 2 - wx * k, y: map.H / 2 - wy * k }, 450); }
+function zoomBy(f){ const v = map.view, k = Math.max(.15, Math.min(6, v.k * f)), w = toWorld(map.W / 2, map.H / 2); animView({ k, x: map.W / 2 - w.x * k, y: map.H / 2 - w.y * k }, 200); }
 const toWorld = (sx, sy) => ({ x: (sx - map.view.x) / map.view.k, y: (sy - map.view.y) / map.view.k });
 function hit(sx, sy){
-  const p = toWorld(sx, sy);
-  for (let i = map.nodes.length - 1; i >= 0; i--){ const n = map.nodes[i]; if (Math.hypot(n.x - p.x, n.y - p.y) < n.r + 3 / map.view.k) return n; }
-  return null;
+  const p = toWorld(sx, sy); let best = null;
+  for (const n of map.nodes) if (Math.hypot(n.x - p.x, n.y - p.y) < n.r + 3 / map.view.k && (!best || n.r < best.r)) best = n;
+  return best;
 }
 function wrap(text, maxW, maxLines){
   const words = String(text).replace(/[_-]+/g, ' ').split(/\s+/), lines = []; let cur = '';
@@ -747,59 +790,46 @@ function wrap(text, maxW, maxLines){
   return lines;
 }
 
-/* ---------- drawing ---------- */
-function drawMap(now){
+/* ---------- drawing: flat fills, crisp outlines, straight links ---------- */
+function drawMap(){
   requestAnimationFrame(drawMap);
   if (!map.open || !map.nodes || !map.nodes.length) return;
   tick();
-  map.fade = Math.min(1, map.fade + .05);
-  const t = now / 1000, { d, W, H } = map, v = map.view, q = map.q, F = map.fade;
+  map.fade = Math.min(1, map.fade + .08);
+  const { d, W, H } = map, v = map.view, F = map.fade, font = css('--font');
   const focus = map.hover || map.sel;
   mx.setTransform(d, 0, 0, d, 0, 0); mx.clearRect(0, 0, W, H);
   mx.setTransform(d * v.k, 0, 0, d * v.k, d * v.x, d * v.y);
-  const matches = n => !q || (n.label + ' ' + (n.rel || '') + ' ' + (n.text || '')).toLowerCase().includes(q);
 
-  // links
   for (const l of map.links){
     const on = focus && (l.s === focus || l.t === focus);
-    const a = (on ? .9 : focus ? .05 : (l.short ? .18 : .1 + l.w * .35)) * F * (q && !(matches(l.s) && matches(l.t)) ? .3 : 1);
-    if (a < .01) continue;
-    const col = colorOf((on ? focus : l.s).cluster);
-    mx.strokeStyle = rgbaOf(col, a); mx.lineWidth = (on ? 2.2 : .7 + l.w * 1.8) / v.k;
-    if (on){ mx.setLineDash([7 / v.k, 7 / v.k]); mx.lineDashOffset = -t * 30 / v.k; }
-    const mxp = (l.s.x + l.t.x) / 2 + (l.t.y - l.s.y) * .08, myp = (l.s.y + l.t.y) / 2 - (l.t.x - l.s.x) * .08;   // slight curve
-    mx.beginPath(); mx.moveTo(l.s.x, l.s.y); mx.quadraticCurveTo(mxp, myp, l.t.x, l.t.y); mx.stroke();
-    mx.setLineDash([]);
+    const faded = map.q && !(matches(l.s) && matches(l.t));
+    const a = (on ? .95 : focus ? .05 : l.short ? .12 : .1 + l.w * .14) * F * (faded ? .3 : 1);
+    mx.strokeStyle = on ? rgbaOf(colorOf(focus.cluster), a) : `rgba(255,255,255,${a})`;
+    mx.lineWidth = (on ? 1.6 : 1) / v.k;
+    mx.beginPath(); mx.moveTo(l.s.x, l.s.y); mx.lineTo(l.t.x, l.t.y); mx.stroke();
   }
-  // bubbles
   for (const n of map.nodes){
     const hot = n === map.hover || n === map.sel, near = focus && focus.nb.has(n);
-    const dim = (focus && !hot && !near) || (q && !matches(n));
-    const bob = n.fx != null || n === map.drag?.node ? 0 : Math.sin(t * 1.1 + n.ph) * .9;
-    const x = n.x, y = n.y + bob, r = n.r * (hot ? 1.08 : 1), col = colorOf(n.cluster);
+    const dim = (focus && !hot && !near) || !matches(n);
+    const x = n.x, y = n.y, r = n.r, col = colorOf(n.cluster), px = r * v.k;
     mx.globalAlpha = (dim ? .16 : 1) * F;
-    if (hot || near){ mx.shadowColor = col; mx.shadowBlur = hot ? 30 : 14; }
-    const g = mx.createRadialGradient(x - r * .35, y - r * .42, r * .08, x, y, r);
-    g.addColorStop(0, rgbaOf('#ffffff', .9)); g.addColorStop(.16, rgbaOf(col, .95)); g.addColorStop(.75, rgbaOf(col, .62)); g.addColorStop(1, rgbaOf(col, .38));
-    mx.fillStyle = g; mx.beginPath(); mx.arc(x, y, r, 0, 7); mx.fill(); mx.shadowBlur = 0;
-    mx.strokeStyle = rgbaOf(hot ? '#ffffff' : col, hot ? .95 : .6); mx.lineWidth = (hot ? 2.2 : 1) / v.k; mx.stroke();
-    if (n.center){ mx.strokeStyle = rgbaOf(col, .35); mx.lineWidth = 1.5 / v.k; mx.setLineDash([3 / v.k, 6 / v.k]); mx.beginPath(); mx.arc(x, y, r + 9 + Math.sin(t * 2) * 2, 0, 7); mx.stroke(); mx.setLineDash([]); }
-    // text
-    const big = n.kind === 'topic' || n.kind === 'memhub' || n.center;
-    if (big && r * v.k > 26){
-      const fs = Math.max(8, Math.min(r * .27, 22));
-      mx.font = `700 ${fs}px ${css('--display')}`; mx.textAlign = 'center'; mx.textBaseline = 'middle';
-      const lines = wrap(n.label, r * 1.55, 3), lh = fs * 1.12, y0 = y - (lines.length - 1) * lh / 2 - (n.sub ? fs * .35 : 0);
-      mx.fillStyle = '#ffffff'; mx.shadowColor = rgbaOf('#000000', .55); mx.shadowBlur = 6;
-      lines.forEach((s, i) => mx.fillText(s, x, y0 + i * lh));
-      if (n.sub){ mx.font = `600 ${fs * .62}px ${css('--font')}`; mx.globalAlpha *= .85; mx.fillText(n.sub, x, y0 + lines.length * lh + fs * .05); }
-      mx.shadowBlur = 0;
-    } else if (n.kind !== 'part' && (r * v.k > 17 || hot || near || (q && matches(n)))){
-      mx.font = `600 ${11.5 / v.k}px ${css('--font')}`; mx.textAlign = 'center'; mx.textBaseline = 'top';
-      const name = n.label.length > 26 ? n.label.slice(0, 24) + '…' : n.label;
-      mx.fillStyle = palette.text; mx.globalAlpha *= hot ? 1 : .8; mx.fillText(name, x, y + r + 4 / v.k);
-    } else if (n.kind === 'mem' && r * v.k > 10){
-      mx.font = `${r}px sans-serif`; mx.textAlign = 'center'; mx.textBaseline = 'middle'; mx.fillText('🧠', x, y + 1);
+    mx.beginPath(); mx.arc(x, y, r, 0, 7);
+    mx.fillStyle = '#0a0b10'; mx.fill();                                // hide links passing under the bubble
+    mx.fillStyle = rgbaOf(col, hot ? .42 : near ? .3 : .2); mx.fill();
+    mx.strokeStyle = hot ? '#ffffff' : col; mx.lineWidth = (hot ? 2 : 1.5) / v.k; mx.stroke();
+    if (n === map.sel || n.center){ mx.strokeStyle = rgbaOf(col, .55); mx.lineWidth = 1 / v.k; mx.beginPath(); mx.arc(x, y, r + 5 / v.k, 0, 7); mx.stroke(); }
+    if (n.kind !== 'part' && n.kind !== 'mem' && px > 30){               // name (and share) inside the bubble
+      const fs = Math.max(10, Math.min(px * .2, 15)) / v.k;
+      mx.font = `600 ${fs}px ${font}`; mx.textAlign = 'center'; mx.textBaseline = 'middle';
+      const showVal = n.val && px > 42, lines = wrap(n.label, r * 1.6, px > 56 ? 2 : 1), lh = fs * 1.2;
+      const y0 = y - (lines.length - 1 + (showVal ? 1 : 0)) * lh / 2;
+      mx.fillStyle = '#ffffff'; lines.forEach((s, i) => mx.fillText(s, x, y0 + i * lh));
+      if (showVal){ mx.font = `${fs * .85}px ${MONO}`; mx.fillStyle = 'rgba(255,255,255,.62)'; mx.fillText(n.val, x, y0 + lines.length * lh); }
+    } else if (n.kind !== 'part' && (hot || near || (map.q && matches(n)))){   // otherwise a label under it, only when it matters
+      mx.font = `500 ${11.5 / v.k}px ${font}`; mx.textAlign = 'center'; mx.textBaseline = 'top';
+      mx.fillStyle = hot ? '#ffffff' : 'rgba(230,232,238,.8)';
+      mx.fillText(n.label.length > 30 ? n.label.slice(0, 28) + '…' : n.label, x, y + r + 5 / v.k);
     }
     mx.globalAlpha = 1;
   }
@@ -831,13 +861,14 @@ mc.addEventListener('pointermove', e => {
   const n = hit(sx, sy); map.hover = n; mc.style.cursor = n ? 'pointer' : 'grab';
   const tip = $('#mtip');
   if (n){
-    tip.textContent = n.kind === 'topic' ? `${n.label} · ${n.count} documents · double-click to enter`
+    tip.textContent = n.kind === 'topic' ? `${n.label}  ·  ${n.count} documents  ·  ${n.val}`
       : n.kind === 'part' ? `${n.label}: ${n.text.slice(0, 90)}…`
-      : n.kind === 'mem' ? '🧠 ' + n.fact : n.kind === 'memhub' ? 'Memory · double-click to enter'
-      : `${n.label} · ${EXT[n.ext] || n.ext}${n.sim ? ` · ${Math.round(n.sim * 100)}% similar` : ''}`;
-    tip.style.left = Math.min(sx + 14, map.W - 240) + 'px'; tip.style.top = (sy + 10) + 'px'; tip.style.opacity = 1;
+      : n.kind === 'mem' ? n.fact : n.kind === 'memhub' ? `Memory  ·  ${n.sub}`
+      : `${n.label}  ·  ${EXT[n.ext] || n.ext}${n.val ? '  ·  ' + n.val : ''}`;
+    tip.style.left = Math.min(sx + 14, map.W - 250) + 'px'; tip.style.top = (sy + 12) + 'px'; tip.style.opacity = 1;
   } else tip.style.opacity = 0;
 });
+mc.addEventListener('pointerleave', () => { map.hover = null; $('#mtip').style.opacity = 0; });
 mc.addEventListener('pointerup', e => {
   mc.classList.remove('drag');
   const g = map.drag; map.drag = null;
@@ -846,42 +877,45 @@ mc.addEventListener('pointerup', e => {
   if (!g.moved) select(g.node);
 });
 mc.addEventListener('dblclick', e => { const r = mc.getBoundingClientRect(); enter(hit(e.clientX - r.left, e.clientY - r.top)); });
-$('#mapQ').addEventListener('input', e => { map.q = e.target.value.trim().toLowerCase(); });
+$('#mapQ').addEventListener('input', e => { map.q = e.target.value.trim().toLowerCase(); filterList(); });
 $('#mapQ').addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !map.q) return;
   const here = map.nodes.find(n => n.kind === 'doc' && (n.label + ' ' + (n.rel || '')).toLowerCase().includes(map.q));
   if (here && map.level.type !== 'topics'){ select(here); zoomTo(here.x, here.y, Math.max(map.view.k, 1.6)); return; }
   const n = map.data.nodes.find(n => (n.name + ' ' + n.rel).toLowerCase().includes(map.q));
-  if (n){ go({ type:'doc', path:n.path }); e.target.value = ''; map.q = ''; } else toast('No document matches');
+  if (n){ e.target.value = ''; map.q = ''; go({ type:'doc', path:n.path }); } else toast('No document matches');
 });
 
-/* ---------- info panel ---------- */
+/* ---------- detail card (top of the right panel) ---------- */
 function closeInfo(){ $('#minfo').classList.remove('open'); }
 function select(n){
+  if (map.sel?.el) map.sel.el.classList.remove('on');
   map.sel = n; const box = $('#minfo');
   if (!n){ closeInfo(); return; }
-  const col = colorOf(n.cluster);
+  if (n.el){ n.el.classList.add('on'); n.el.scrollIntoView({ block:'nearest' }); }
+  const col = colorOf(n.cluster), tag = t => `<div class="mk"><i style="background:${col}"></i>${esc(t)}</div>`;
   const conns = [...n.nb.entries()].filter(([o]) => o.kind !== 'part').sort((a, b) => b[1] - a[1]).slice(0, 12);
-  const connHtml = conns.length ? `<div class="conn"><div class="lh">Connected to ${conns.length}</div>${conns.map(([o, w], i) =>
-      `<a data-i="${i}"><i style="background:${colorOf(o.cluster)}"></i><span>${esc(o.label)}</span><small>${o.sim ? Math.round(o.sim * 100) + '%' : '●'.repeat(1 + Math.round(w * 3))}</small></a>`).join('')}</div>` : '';
+  const connHtml = conns.length ? `<div class="conn"><div class="mk" style="margin-bottom:4px">Linked to ${conns.length}</div>${conns.map(([o, w], i) =>
+      `<a data-i="${i}"><i style="background:${colorOf(o.cluster)}"></i><span>${esc(o.label)}</span><small>${o.sim ? Math.round(o.sim * 100) + '%' : Math.round(w * 100)}</small></a>`).join('')}</div>` : '';
+  const x = '<button class="mbtn" id="miClose">Close</button>';
   let html = '';
   if (n.kind === 'topic' || n.kind === 'memhub'){
-    html = `<div class="lh" style="color:${col}">Topic</div><h5>${esc(n.label)}</h5><div class="meta">${esc(n.sub)}</div>
-      <div class="row"><button class="btn primary" id="miEnter">Enter ↵</button><button class="btn" id="miClose">×</button></div>${connHtml}`;
+    html = `${tag('Topic')}<h5>${esc(n.label)}</h5><div class="meta">${esc(n.sub)}${n.kind === 'topic' ? '  ·  ' + n.val + ' of all documents' : ''}</div>
+      <div class="row"><button class="mbtn pri" id="miEnter">Enter</button>${x}</div>${connHtml}`;
   } else if (n.kind === 'doc'){
-    html = `<div class="lh" style="color:${col}">${esc((map.data.clusters.find(c => c.id === n.cluster) || {}).label || '')}</div><h5>${esc(n.label)}</h5>
-      <div class="meta">${esc(EXT[n.ext] || n.ext)} · ${n.size} passages${n.sim ? ` · ${Math.round(n.sim * 100)}% similar` : ''}<br>${esc(n.rel)}</div>
-      <div class="row">${n.center ? '' : '<button class="btn primary" id="miEnter">Enter ↵</button>'}<button class="btn${n.center ? ' primary' : ''}" id="miOpen">Open</button><button class="btn" id="miAsk">Ask Sahbi</button><button class="btn" id="miClose">×</button></div>${connHtml}`;
+    html = `${tag((map.data.clusters.find(c => c.id === n.cluster) || {}).label || 'Document')}<h5>${esc(n.label)}</h5>
+      <div class="meta">${esc(EXT[n.ext] || n.ext)}  ·  ${n.size} passages${n.sim ? `  ·  ${Math.round(n.sim * 100)}% match` : ''}<br>${esc(n.rel)}</div>
+      <div class="row">${n.center ? '' : '<button class="mbtn pri" id="miEnter">Enter</button>'}<button class="mbtn${n.center ? ' pri' : ''}" id="miOpen">Open file</button><button class="mbtn" id="miAsk">Summarize</button>${x}</div>${connHtml}`;
   } else if (n.kind === 'part'){
-    html = `<div class="lh" style="color:${col}">${esc(n.label)} · ${esc(n.doc)}</div><div class="txt">${esc(n.text)}</div>
-      <div class="row"><button class="btn primary" id="miAsk">Explain this part</button><button class="btn" id="miClose">×</button></div>`;
+    html = `${tag(n.label + '  ·  ' + n.doc)}<div class="txt">${esc(n.text)}</div>
+      <div class="row"><button class="mbtn pri" id="miAsk">Explain this part</button>${x}</div>`;
   } else if (n.kind === 'mem'){
-    html = `<div class="lh">🧠 Memory</div><h5>${esc(n.fact)}</h5><div class="meta">saved ${esc(n.added)}</div>
-      <div class="row"><button class="btn danger" id="miForget">Forget</button><button class="btn" id="miClose">×</button></div>`;
+    html = `${tag('Memory')}<h5>${esc(n.fact)}</h5><div class="meta">saved ${esc(n.added)}</div>
+      <div class="row"><button class="mbtn dng" id="miForget">Forget</button>${x}</div>`;
   }
-  box.innerHTML = html; box.classList.add('open');
+  box.innerHTML = html; box.classList.add('open'); box.scrollTop = 0;
   const on = (id, f) => { const b = box.querySelector('#' + id); if (b) b.onclick = f; };
-  on('miClose', () => { closeInfo(); map.sel = null; });
+  on('miClose', () => select(null));
   on('miEnter', () => enter(n));
   on('miOpen', () => post('/api/open', {path:n.path}).then(() => toast('Opening ' + n.label)));
   on('miAsk', () => send(n.kind === 'part'
@@ -890,7 +924,8 @@ function select(n){
   on('miForget', async () => { await post('/api/memory/forget', {text:n.fact}); toast('Forgotten'); map.data = null; loadMem(); loadMap(); });
   box.querySelectorAll('.conn a').forEach(a => {
     const o = conns[+a.dataset.i][0];
-    a.onclick = () => { select(o); zoomTo(o.x, o.y, Math.max(map.view.k, 1.2)); };
+    a.onmouseenter = () => { map.hover = o; }; a.onmouseleave = () => { if (map.hover === o) map.hover = null; };
+    a.onclick = () => { select(o); zoomTo(o.x, o.y, Math.max(map.view.k, 1)); };
     a.ondblclick = () => enter(o);
   });
 }
