@@ -292,9 +292,13 @@ def half_wake(text):
 
 
 def is_wake(text):
-    t = norm(text)
-    a = any(w.startswith(x) or x in w for w in t.split() for x in WAKE_A) or 'سلام' in text
-    b = any(x in t.replace(' ', '') for x in WAKE_B)
+    """The phrase must OPEN the utterance ("Salam Sahbi ..."), so songs and TV that mention the words
+    somewhere in a sentence don't wake it."""
+    words = norm(text).split()
+    if not words:
+        return False
+    a = any(w.startswith(x) or x in w for w in words[:2] for x in WAKE_A)
+    b = any(x in ''.join(words[:4]) for x in WAKE_B)
     return a and b
 
 
@@ -383,6 +387,10 @@ class Ears:
             if is_wake(text):
                 rest = re.split(r'(?i)sa\w*b\w*i|صاحبي|صحبي', text, maxsplit=1)
                 rest = rest[1].strip(' ,.!?') if len(rest) > 1 else ''
+                if len(rest.split()) > 14:          # a long sentence = song / video, not a request
+                    log('ignored wake-like speech:', text[:120])
+                    continue
+                log('wake phrase heard:', text[:120])
                 self.on_wake(rest)
                 awake_until = 0 if len(rest) > 6 else time.time() + 10
 
@@ -544,6 +552,21 @@ def api_emails():
 @app.get('/api/memory')
 def api_memory():
     return jsonify(items=memory.load()[::-1], index=rag.status)
+
+
+@app.get('/api/map')
+def api_map():
+    d = rag.map_data()
+    return jsonify(clusters=d['clusters'], nodes=d['nodes'], memory=memory.load())
+
+
+@app.post('/api/open')
+def api_open():
+    path = (request.json or {}).get('path', '')
+    known = {n['path'] for n in rag.map_data()['nodes']}
+    if path not in known:                      # only files that are in the index can be opened from the page
+        return jsonify(error='unknown file'), 400
+    return jsonify(result=tools.open_path(path))
 
 
 @app.post('/api/memory/forget')

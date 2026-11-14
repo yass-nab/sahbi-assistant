@@ -23,6 +23,8 @@ No cloud LLM, no API keys, no per-message cost.
 | 📱 Phone | Reminders and files pushed to the phone | optional Beam bridge |
 | 🎮 Auto game mode | A game starts → Sahbi shuts down and frees the GPU; game closes → back on | psutil watcher (Steam, Epic, Riot, …) |
 | 🌍 Darija | Understands Moroccan Darija via a glossary injected per message | |
+| 🫧 Knowledge map | Your documents as floating bubbles grouped into topics; search, zoom, click to open or ask about one | k-means on document embeddings + PCA layout + canvas physics |
+| 🎨 6 themes | Sahara Gold, Neon Tokyo, Aurora, Frost (light), Matrix, Atlas Sunset — press T to cycle | CSS variables, themed orb and map |
 
 ## Architecture
 

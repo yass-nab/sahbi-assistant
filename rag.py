@@ -164,3 +164,98 @@ if __name__ == '__main__':
             print(f"{h['score']}  {Path(h['file']).name}\n   {h['text'][:200]}\n")
     else:
         print(build())
+
+
+# ------------------------------------------------------------------ bubble map (topics of your documents)
+STOP = set('the and for with from this that your you are pdf docx pptx ipynb txt md les des une pour avec dans sur par '
+           'copy final new old version untitled document notebook file files cours chapitre chapter part page des du de la le'.split())
+
+
+def _kmeans(X, k, iters=30, seed=7):
+    rng = np.random.default_rng(seed)
+    C = [X[rng.integers(len(X))]]
+    for _ in range(1, k):                                   # k-means++ start
+        d = np.min([1 - X @ c for c in C], axis=0).clip(1e-9)
+        C.append(X[rng.choice(len(X), p=d / d.sum())])
+    C = np.array(C)
+    for _ in range(iters):
+        lab = np.argmax(X @ C.T, axis=1)
+        for j in range(k):
+            m = X[lab == j]
+            if len(m):
+                c = m.mean(0)
+                C[j] = c / (np.linalg.norm(c) + 1e-9)
+    return np.argmax(X @ C.T, axis=1), C
+
+
+def _words(path):
+    rel = str(Path(path)).lower()
+    toks = re.findall(r'[a-zà-ÿ]{3,}', Path(rel).stem) * 2 + re.findall(r'[a-zà-ÿ]{3,}', Path(rel).parent.name)
+    return [t for t in toks if t not in STOP]
+
+
+def _folder(path):
+    try:
+        parts = Path(path).relative_to(Path(config.get('workspace'))).parts
+    except ValueError:
+        parts = Path(path).parts
+    name = parts[1] if len(parts) > 2 else parts[0]
+    return re.sub(r'^\d+\s*', '', name)
+
+
+def map_data():
+    cache = IDX / 'map.json'
+    meta_file = IDX / 'meta.json'
+    if cache.exists() and meta_file.exists() and cache.stat().st_mtime >= meta_file.stat().st_mtime:
+        return json.loads(cache.read_text(encoding='utf-8'))
+    meta, vecs = _load()
+    if not len(vecs):
+        return {'clusters': [], 'nodes': []}
+    by_file = {}
+    for i, c in enumerate(meta['chunks']):
+        by_file.setdefault(c['file'], []).append(i)
+    files_ = list(by_file)
+    X = np.array([vecs[by_file[f]].mean(0) for f in files_])
+    X = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-9)
+    k = int(min(10, max(3, len(files_) // 40)))
+    lab, C = _kmeans(X, k)
+    # topic names: words frequent inside the cluster but rare elsewhere
+    from collections import Counter
+    total = Counter(w for f in files_ for w in set(_words(f)))
+    clusters = []
+    for j in range(k):
+        members = [f for f, l in zip(files_, lab) if l == j]
+        folders = Counter(_folder(f) for f in members).most_common(3)
+        best = [n for n, c in folders if c >= max(2, 0.18 * len(members))][:2]
+        if not best:
+            cnt = Counter(w for f in members for w in set(_words(f)))
+            best = [w.capitalize() for w in sorted(cnt, key=lambda w: -(cnt[w] / (total[w] + 2)) * min(cnt[w], 6))[:2]]
+        clusters.append({'id': j, 'label': ' · '.join(best) or f'Topic {j + 1}', 'count': len(members)})
+    seen = Counter(c['label'] for c in clusters)            # same folder twice -> add a distinguishing word
+    for j, c in enumerate(clusters):
+        if seen[c['label']] > 1:
+            members = [f for f, l in zip(files_, lab) if l == j]
+            cnt = Counter(w for f in members for w in set(_words(f)))
+            w = sorted(cnt, key=lambda w: -(cnt[w] / (total[w] + 2)) * min(cnt[w], 6))[:1]
+            if w:
+                c['label'] = f"{c['label'].split(' · ')[0]} · {w[0].capitalize()}"
+    # place topics: 2-D PCA of the topic centres, so related topics sit close together
+    Cc = C - C.mean(0)
+    _, _, vt = np.linalg.svd(Cc, full_matrices=False)
+    P = Cc @ vt[:2].T
+    P = P / (np.abs(P).max(0) + 1e-9)
+    for j, c in enumerate(clusters):
+        c['x'], c['y'] = round(float(P[j, 0]), 3), round(float(P[j, 1]), 3)
+    root = Path(config.get('workspace'))
+    nodes = []
+    for f, l in zip(files_, lab):
+        p = Path(f)
+        try:
+            rel = str(p.relative_to(root))
+        except ValueError:
+            rel = p.name
+        nodes.append({'name': p.stem, 'ext': p.suffix.lower().lstrip('.'), 'path': f, 'rel': rel,
+                      'cluster': int(l), 'size': len(by_file[f])})
+    out = {'clusters': clusters, 'nodes': nodes}
+    cache.write_text(json.dumps(out, ensure_ascii=False), encoding='utf-8')
+    return out
