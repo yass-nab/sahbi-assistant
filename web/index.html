@@ -321,6 +321,7 @@ function connect(){
       case 'inbox': if (m.messages?.length) listCard('📥 Inbox', m.messages.map(x => `<div class="li"><span class="n">${x.n}</span><div><b>${esc(x.from)}</b> <small>${esc(x.date)}</small><br>${esc(x.subject)}<small class="sn">${esc(x.snippet.slice(0,110))}</small></div></div>`)); break;
       case 'jobs': if (m.jobs?.length) listCard('🧭 Job offers', m.jobs.map(j => `<a class="li" href="${esc(j.url)}" target="_blank" rel="noopener"><span class="n">${j.n}</span><div><b>${esc(j.title)}</b><br><small>${esc(j.company || '')} · ${esc(j.site)}</small></div><span class="fit f${j.score >= 6 ? 'hi' : j.score >= 3 ? 'mid' : 'lo'}">${j.score}/10</span></a>`)); break;
       case 'wake': toast('Salam Sahbi 👋'); break;
+      case 'mic': $('#cMic').classList.toggle('on', m.on); $('#cMic span:last-child').textContent = m.on ? 'wake word on' : 'mic off'; break;
       case 'heard': el('msg me', esc(m.text) + (m.source === 'voice' ? '<span class="voice">🎙</span>' : '')); typing(true); break;
       case 'stream_start': streamText = ''; break;
       case 'delta':
@@ -330,7 +331,7 @@ function connect(){
       case 'stream_drop': if (streamEl){ streamEl.remove(); streamEl = null } streamText = ''; typing(true); break;
       case 'action':
         typing(false); if (pendingAct){ pendingAct.remove(); pendingAct = null }
-        el('act', `<span class="ic">${ICON[m.tool] || '⚙️'}</span><b>${esc(m.tool.replace(/_/g,' '))}</b><span>${esc(String(m.result).split('\n')[0].slice(0,140))}</span>`);
+        el('act', `<span class="ic">${ICON[m.tool] || '⚙️'}</span><b>${esc(m.tool.replace(/_/g,' '))}</b><span>${esc((String(m.result).split('\n').find(l => l.trim() && !l.startsWith('[')) || '').slice(0,140))}</span>`);
         typing(true); break;
       case 'reply':
         typing(false);

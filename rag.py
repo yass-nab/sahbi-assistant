@@ -20,6 +20,11 @@ MAX_MB = 25
 CHUNK, OVERLAP = 900, 150
 _lock = threading.Lock()
 status = {'state': 'idle', 'files': 0, 'chunks': 0, 'done': 0, 'todo': 0}
+try:                                   # show the existing index right away after a restart
+    _m = json.loads((IDX / 'meta.json').read_text(encoding='utf-8'))
+    status.update(state='ready', files=len(_m['files']), chunks=len(_m['chunks']))
+except (OSError, ValueError, KeyError):
+    pass
 
 
 # ------------------------------------------------------------------ reading files

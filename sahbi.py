@@ -389,7 +389,7 @@ class Ears:
     def on_wake(self, rest):
         log('WAKE', rest)
         if not page_open():
-            webbrowser.open(URL)
+            tools.open_url(URL)
         push('wake')
         if len(rest) > 6:
             threading.Thread(target=chat, args=(rest, 'voice'), daemon=True).start()
@@ -582,7 +582,7 @@ def main():
     try:                            # already running? just open the page
         requests.get(URL + '/api/status', timeout=2)
         if '--open' in sys.argv:
-            webbrowser.open(URL)
+            tools.open_url(URL)
         return
     except requests.RequestException:
         pass
@@ -594,6 +594,7 @@ def main():
             try:
                 e = Ears()
                 ears = e
+                push('mic', on=True)
                 threading.Thread(target=maybe_morning_brief, daemon=True).start()
                 e.run()
             except Exception as ex:  # noqa: BLE001
@@ -603,7 +604,7 @@ def main():
     if '--no-index' not in sys.argv:
         threading.Thread(target=index_loop, daemon=True).start()
     if '--open' in sys.argv:
-        threading.Timer(1.5, lambda: webbrowser.open(URL)).start()
+        threading.Timer(1.5, lambda: tools.open_url(URL)).start()
     log('Sahbi on', URL, 'model', MODEL)
     app.run(host='127.0.0.1', port=PORT, threaded=True, use_reloader=False)
 
