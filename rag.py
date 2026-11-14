@@ -256,6 +256,47 @@ def map_data():
             rel = p.name
         nodes.append({'name': p.stem, 'ext': p.suffix.lower().lstrip('.'), 'path': f, 'rel': rel,
                       'cluster': int(l), 'size': len(by_file[f])})
-    out = {'clusters': clusters, 'nodes': nodes}
+    # links (like a holders bubble map): each document -> its most similar documents, each topic -> nearest topics
+    S = X @ X.T
+    np.fill_diagonal(S, 0)
+    links, seen_pairs = [], set()
+    for i in range(len(files_)):
+        for j in np.argsort(-S[i])[:3]:
+            a, b = sorted((i, int(j)))
+            if S[i, j] >= 0.80 and (a, b) not in seen_pairs:
+                seen_pairs.add((a, b))
+                links.append({'a': a, 'b': b, 'w': round(float((S[i, j] - 0.8) / 0.2), 3)})
+    CS = C @ C.T
+    np.fill_diagonal(CS, -1)
+    tlinks, tseen = [], set()
+    for i in range(k):
+        for j in np.argsort(-CS[i])[:3]:
+            a, b = sorted((i, int(j)))
+            if (a, b) not in tseen:
+                tseen.add((a, b))
+                tlinks.append({'a': a, 'b': b, 'w': round(float(CS[i, j]), 3)})
+    lo, hi = min(l['w'] for l in tlinks), max(l['w'] for l in tlinks)
+    for l in tlinks:
+        l['w'] = round((l['w'] - lo) / (hi - lo + 1e-9), 3)
+    np.save(IDX / 'filevecs.npy', X)
+    out = {'clusters': clusters, 'nodes': nodes, 'links': links, 'topic_links': tlinks}
     cache.write_text(json.dumps(out, ensure_ascii=False), encoding='utf-8')
     return out
+
+
+def doc_detail(path, max_parts=28):
+    """One document 'opened up': its passages and the most related documents anywhere in the Workspace."""
+    data = map_data()
+    files_ = [n['path'] for n in data['nodes']]
+    if path not in files_:
+        return None
+    meta, _ = _load()
+    parts = [c['text'] for c in meta['chunks'] if c['file'] == path]
+    step = max(1, len(parts) // max_parts)
+    parts = [' '.join(t.split()) for t in parts[::step][:max_parts]]
+    X = np.load(IDX / 'filevecs.npy')
+    i = files_.index(path)
+    sims = X @ X[i]
+    sims[i] = -1
+    related = [{**data['nodes'][int(j)], 'w': round(float(sims[j]), 3)} for j in np.argsort(-sims)[:10]]
+    return {'node': data['nodes'][i], 'parts': parts, 'related': related}

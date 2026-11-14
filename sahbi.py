@@ -557,7 +557,14 @@ def api_memory():
 @app.get('/api/map')
 def api_map():
     d = rag.map_data()
-    return jsonify(clusters=d['clusters'], nodes=d['nodes'], memory=memory.load())
+    return jsonify(clusters=d['clusters'], nodes=d['nodes'], links=d.get('links', []),
+                   topic_links=d.get('topic_links', []), memory=memory.load())
+
+
+@app.get('/api/map/doc')
+def api_map_doc():
+    d = rag.doc_detail(request.args.get('path', ''))
+    return jsonify(d) if d else (jsonify(error='unknown file'), 404)
 
 
 @app.post('/api/open')
