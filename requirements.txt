@@ -8,3 +8,6 @@ pypdf
 pillow
 psutil
 cryptography
+# optional, NVIDIA GPU only: speech recognition in ~0.4 s instead of 3-4 s
+# nvidia-cublas-cu12
+# nvidia-cudnn-cu12>=9,<10

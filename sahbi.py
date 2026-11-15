@@ -92,6 +92,30 @@ def say(text, wait=False):
 tools.speak = say
 
 
+def chime():
+    """A short tick the moment the name is recognised, so there is never a silent wait."""
+    if not voice.enabled:
+        return
+    import winsound
+    threading.Thread(target=lambda: winsound.Beep(1175, 70), daemon=True).start()
+
+
+LLM_OPTS = {'temperature': 0.4, 'num_ctx': 6144}     # smaller context so more of the model fits on a 6 GB GPU
+KEEP_ALIVE = '4h'                                     # stay loaded: a cold start costs 10-15 s (game mode still unloads it)
+
+
+def warm_up():
+    """Load the model with the real tool list so the first spoken command is as fast as the rest."""
+    try:
+        t0 = time.time()
+        requests.post(f'{OLLAMA}/api/chat', json={'model': MODEL, 'messages': [{'role': 'user', 'content': 'hi'}],
+                      'tools': tools.SPECS, 'stream': False, 'keep_alive': KEEP_ALIVE,
+                      'options': {**LLM_OPTS, 'num_predict': 1}}, timeout=240)
+        log(f'model warm ({time.time() - t0:.1f}s)')
+    except Exception as e:  # noqa: BLE001
+        log('warm-up failed', repr(e))
+
+
 # ------------------------------------------------------------------ the brain (Ollama)
 SYSTEM = f"""You are Sahbi ("my buddy"), the personal AI of {config.get('user_name')}, running 100% locally on his laptop.
 About him: {config.get('about')} City: {config.get('city')}.
@@ -166,6 +190,13 @@ def quick_intent(t):
         cv = config.get('cv').get(lang)
         if cv:
             return 'open_path', {'path': cv}
+    if len(w) <= 6 and re.search(r'\b(emails?|mails?|inbox|gmail)\b', t) and re.search(r'\b(check|any|new|my|mes|nouveaux?)\b', t) \
+            and not re.search(r'\b(send|envoie|reply|repond|read|lis|write|cv|to|from|about)\b', t):
+        return 'check_email', {}
+    if len(w) <= 6 and re.search(r'\b(brief|briefing)\b', t):
+        return 'morning_brief', {}
+    if len(w) <= 7 and re.search(r'\b(look at|regarde|what s on|what is on)\b.*\b(screen|ecran)\b', t):
+        return 'look_at_screen', {}
     if re.search(r'\b(open|ouvre|show|montre)\b.*\b(yourself|sahbi|the app|your page|l app|ton interface|bubble map|the map)\b', t):
         return 'open_website', {'url': URL + ('/?map' if 'map' in w else '')}
     return None
@@ -204,7 +235,9 @@ def chat(user_text, source='text', speak_reply=True):
         result = tools.run(tool, args)
         push('action', tool=tool, args=args, result=result[:600])
         log('quick', tool, args, '->', result[:160])
-        reply = result.split('\n')[0]
+        reply = result if tool == 'morning_brief' else result.split('\n')[0]
+        if tool == 'look_at_screen' and result.startswith('[') and '\n' in result:
+            reply = result.split('\n', 1)[1]            # drop the "[What the vision model sees]" header line
         push('reply', text=reply)
         push('state', state='idle')
         with open(CHATS / f'{datetime.now():%Y-%m-%d}.jsonl', 'a', encoding='utf-8') as f:
@@ -240,7 +273,7 @@ def chat(user_text, source='text', speak_reply=True):
                 push('stream_start')
                 with requests.post(f'{OLLAMA}/api/chat', json={
                         'model': MODEL, 'messages': msgs, 'tools': tools.SPECS, 'stream': True,
-                        'keep_alive': '15m', 'options': {'temperature': 0.4, 'num_ctx': 8192}},
+                        'keep_alive': KEEP_ALIVE, 'options': LLM_OPTS},
                         timeout=240, stream=True) as r:
                     r.raise_for_status()
                     for line in r.iter_lines():
@@ -253,6 +286,8 @@ def chat(user_text, source='text', speak_reply=True):
                             content += m['content']
                             push('delta', text=m['content'])
                         if j.get('done'):
+                            log(f"llm: prompt {j.get('prompt_eval_count')} tok, {j.get('load_duration', 0) / 1e9:.1f}s load, "
+                                f"{j.get('prompt_eval_duration', 0) / 1e9:.1f}s read, {j.get('eval_count')} tok out in {j.get('eval_duration', 0) / 1e9:.1f}s")
                             break
                 msgs.append({'role': 'assistant', 'content': content, **({'tool_calls': calls} if calls else {})})
                 if not calls:
@@ -352,18 +387,61 @@ class Ears:
     BLOCK = 480  # 30 ms
 
     def __init__(self):
-        from faster_whisper import WhisperModel
         log('loading speech models...')
-        self.fast = WhisperModel('base', device='cpu', compute_type='int8')
-        self.good = WhisperModel('small', device='cpu', compute_type='int8')
+        self.lang = 'en'
+        self.gpu = False
+        if '--cpu-speech' not in sys.argv:
+            try:
+                self.load_gpu()
+            except Exception as e:  # noqa: BLE001
+                log('GPU speech not available, using the processor:', repr(e)[:200])
+        if not self.gpu:
+            self.load_cpu()
         self.audio = queue.Queue()
         self.listen_now = threading.Event()   # page mic button / after wake
         self.muted = False
         log('speech models ready')
 
-    def transcribe(self, pcm, model, prompt):
-        segs, info = model.transcribe(pcm, beam_size=1 if model is self.fast else 3, vad_filter=False,
+    def load_gpu(self):
+        """Speech on the graphics card: ~0.35 s per sentence instead of 3-4 s. Needs the pip packages
+        nvidia-cublas-cu12 and nvidia-cudnn-cu12 (their DLLs live inside the venv)."""
+        import glob
+        dirs = glob.glob(os.path.join(sys.prefix, 'Lib', 'site-packages', 'nvidia', '*', 'bin'))
+        if not dirs:
+            raise RuntimeError('CUDA libraries are not installed')
+        for d in dirs:
+            os.add_dll_directory(d)
+            os.environ['PATH'] = d + os.pathsep + os.environ['PATH']
+        from faster_whisper import WhisperModel
+        m = WhisperModel('small', device='cuda', compute_type='int8_float16')
+        list(m.transcribe(np.zeros(self.RATE, dtype='float32'), beam_size=1, language='en')[0])   # proves it really runs
+        self.fast = self.good = m          # one model does both passes
+        self.gpu = True
+        log('speech on the graphics card')
+
+    def load_cpu(self):
+        from faster_whisper import WhisperModel
+        self.fast = WhisperModel('base', device='cpu', compute_type='int8', cpu_threads=4)
+        self.good = WhisperModel('small', device='cpu', compute_type='int8', cpu_threads=4)
+        self.gpu = False
+
+    def transcribe(self, pcm, model, prompt, language=None):
+        try:
+            return self._transcribe(pcm, model, prompt, language)
+        except Exception as e:  # noqa: BLE001
+            if not self.gpu:
+                raise
+            log('GPU speech failed, switching to the processor:', repr(e)[:200])   # e.g. graphics memory full
+            cpu_first = model is self.fast and prompt is None
+            self.load_cpu()
+            return self._transcribe(pcm, self.fast if cpu_first else self.good, prompt, language)
+
+    def _transcribe(self, pcm, model, prompt, language=None):
+        """language=None makes whisper detect it, which costs a second pass (2x slower) - so the quick first pass
+        detects the language and the careful pass is told which one it is."""
+        segs, info = model.transcribe(pcm, beam_size=1, vad_filter=False, language=language,
                                       initial_prompt=prompt, condition_on_previous_text=False)
+        self.lang = info.language if info.language in ('en', 'fr', 'ar') else 'en'
         return ' '.join(s.text.strip() for s in segs).strip()
 
     def utterances(self):
@@ -381,7 +459,7 @@ class Ears:
                 buf.append(block)
                 silence = silence + 1 if rms < max(0.006, floor * 2.0) else 0
                 dur = len(buf) * self.BLOCK / self.RATE
-                if silence > 23 or dur > 12:           # ~0.7 s quiet, or 12 s max
+                if silence > 16 or dur > 12:           # ~0.5 s quiet, or 12 s max
                     voiced = False
                     if dur > 0.45:
                         yield np.concatenate(buf)
@@ -414,7 +492,8 @@ class Ears:
                 self.listen_now.clear()
                 awake_until = 0.0
                 push('state', state='thinking')
-                text = self.transcribe(pcm, self.good, STT_HINT)
+                self.transcribe(pcm[:self.RATE * 4], self.fast, None)       # quick pass: which language?
+                text = self.transcribe(pcm, self.good, STT_HINT, self.lang)
                 log('heard command:', text)
                 text = split_wake(text) or text                       # "Sahbi, ..." again is fine
                 if len(norm(text).strip()) < 2:
@@ -427,13 +506,15 @@ class Ears:
                 log(f'clip {secs:.1f}s -> {first!r}')
             if not maybe_wake(first):
                 continue
-            text = self.transcribe(pcm, self.good, STT_HINT)
+            t0 = time.time()
+            text = self.transcribe(pcm, self.good, STT_HINT, self.lang)
             rest = split_wake(text)
             if rest is None or len(rest.split()) > 18:                # not for Sahbi / a song or video
                 log('not for me:', repr(first), '->', repr(text[:100]))
                 continue
-            log('WAKE:', text[:140])
+            log('WAKE:', text[:140], f'({secs:.1f}s clip, heard in {time.time() - now:.1f}s, confirm {time.time() - t0:.1f}s)')
             push('wake')
+            chime()                                                   # instant "I heard you", before any thinking
             if len(norm(rest)) >= 3:
                 threading.Thread(target=chat, args=(rest, 'voice'), daemon=True).start()
             else:                                                     # just "Sahbi" -> answer and wait for the request
@@ -667,6 +748,7 @@ def main():
         threading.Thread(target=start_ears, daemon=True).start()
     if '--no-index' not in sys.argv:
         threading.Thread(target=index_loop, daemon=True).start()
+    threading.Thread(target=warm_up, daemon=True).start()
     if '--open' in sys.argv:
         threading.Timer(1.5, lambda: tools.open_url(URL)).start()
     log('Sahbi on', URL, 'model', MODEL)
