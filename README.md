@@ -65,7 +65,7 @@ test_voice.py    feed WAV files to the listener without a microphone
 ## Setup (Windows)
 
 1. Install [Ollama](https://ollama.com) and Python 3.11+.
-2. Run `setup.ps1` (creates `.venv`, installs requirements, pulls the models, downloads the voice).
+2. Open PowerShell in the Sahbi folder and run `.\setup.ps1`. The script creates `.venv`, installs the Python dependencies, pulls the Ollama models, and downloads the voice.
 3. Edit `config.json` (created from `config.example.json`): your name, folders, CV paths and apps.
 4. Optional Gmail: run `Setup Sahbi email.bat` and paste a Google App Password (needs 2-Step Verification).
 5. Start: `.venv\Scripts\pythonw.exe sahbi.py --open`. Put shortcuts to `sahbi.py` and `gamewatch.py` in the
